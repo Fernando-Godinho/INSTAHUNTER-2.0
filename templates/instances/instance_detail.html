@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ instance.instance_name }} - InstaHunter 2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qrcode-container {
+        text-align: center;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .qrcode-container img {
+        max-width: 300px;
+        border: 2px solid #dee2e6;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-hdd-rack"></i> {{ instance.instance_name }}
+            </h2>
+            <div>
+                <a href="{% url 'instances:instance_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                <a href="{% url 'instances:instance_edit' instance.pk %}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informações da Instância -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Informações da Instância
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <th width="200">Nome:</th>
+                            <td><strong>{{ instance.instance_name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>ID da Instância:</th>
+                            <td>
+                                {% if instance.instance_id %}
+                                    <code>{{ instance.instance_id }}</code>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Token:</th>
+                            <td>
+                                {% if instance.token %}
+                                    <code class="text-truncate d-inline-block" style="max-width: 300px;">
+                                        {{ instance.token }}
+                                    </code>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Número:</th>
+                            <td>
+                                {% if instance.number %}
+                                    {{ instance.number }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Tipo de Integração:</th>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ instance.get_integration_type_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                {% if instance.status == 'connected' %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Conectada
+                                    </span>
+                                {% elif instance.status == 'disconnected' %}
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-x-circle"></i> Desconectada
+                                    </span>
+                                {% elif instance.status == 'error' %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-circle"></i> Erro
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-circle"></i> Criada
+                                    </span>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline-primary ms-2" 
+                                        onclick="checkStatus('{{ instance.pk }}')">
+                                    <i class="bi bi-arrow-clockwise"></i> Atualizar Status
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Criada em:</th>
+                            <td>{{ instance.created_at|date:"d/m/Y H:i:s" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Última atualização:</th>
+                            <td>{{ instance.updated_at|date:"d/m/Y H:i:s" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Configurações -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear"></i> Configurações
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li>
+                        <i class="bi bi-{{ instance.reject_call|yesno:'check-circle-fill text-success,x-circle text-muted' }}"></i>
+                        Rejeitar Chamadas
+                    </li>
+                    <li>
+                        <i class="bi bi-{{ instance.groups_ignore|yesno:'check-circle-fill text-success,x-circle text-muted' }}"></i>
+                        Ignorar Grupos
+                    </li>
+                    <li>
+                        <i class="bi bi-{{ instance.always_online|yesno:'check-circle-fill text-success,x-circle text-muted' }}"></i>
+                        Sempre Online
+                    </li>
+                    <li>
+                        <i class="bi bi-{{ instance.read_messages|yesno:'check-circle-fill text-success,x-circle text-muted' }}"></i>
+                        Ler Mensagens
+                    </li>
+                    <li>
+                        <i class="bi bi-{{ instance.read_status|yesno:'check-circle-fill text-success,x-circle text-muted' }}"></i>
+                        Ler Status
+                    </li>
+                </ul>
+                
+                {% if instance.webhook_url %}
+                <div class="mt-3 pt-3 border-top">
+                    <h6><i class="bi bi-webhook"></i> Webhook</h6>
+                    <p class="mb-1">
+                        <strong>URL:</strong> 
+                        <a href="{{ instance.webhook_url }}" target="_blank">{{ instance.webhook_url }}</a>
+                    </p>
+                    <p class="mb-0">
+                        <i class="bi bi-{{ instance.webhook_by_events|yesno:'check-circle-fill text-success,x-circle text-muted' }}"></i>
+                        Webhook por Eventos
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ações e QR Code -->
+    <div class="col-md-4">
+        <!-- Ações -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning"></i> Ações
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if instance.status == 'connected' %}
+                        <a href="{% url 'instances:instance_disconnect' instance.pk %}" 
+                           class="btn btn-warning">
+                            <i class="bi bi-box-arrow-right"></i> Desconectar
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'instances:instance_restart' instance.pk %}" 
+                       class="btn btn-info">
+                        <i class="bi bi-arrow-clockwise"></i> Reiniciar Instância
+                    </a>
+                    
+                    <a href="{% url 'instances:instance_delete' instance.pk %}" 
+                       class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Deletar Instância
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- QR Code -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-qr-code"></i> QR Code
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if instance.qrcode_base64 %}
+                    <div class="qrcode-container">
+                        {% if instance.qrcode_base64|slice:":4" == "data" %}
+                            <img src="{{ instance.qrcode_base64 }}" 
+                                 alt="QR Code" 
+                                 class="img-fluid">
+                        {% else %}
+                            <img src="data:image/png;base64,{{ instance.qrcode_base64 }}" 
+                                 alt="QR Code" 
+                                 class="img-fluid">
+                        {% endif %}
+                        <p class="mt-3 mb-0 text-muted">
+                            <small>Escaneie com seu WhatsApp</small>
+                        </p>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-qr-code display-1 text-muted"></i>
+                        <p class="lead text-muted mt-3">QR Code não gerado</p>
+                        <p class="text-muted">Clique no botão abaixo para gerar o QR Code e conectar sua instância</p>
+                        <a href="{% url 'instances:instance_connect' instance.pk %}" 
+                           class="btn btn-success btn-lg mt-2">
+                            <i class="bi bi-qr-code"></i> Gerar QR Code
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function checkStatus(instanceId) {
+    fetch(`/instances/${instanceId}/status/`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Status:', data);
+            alert('Status atualizado! Recarregue a página para ver as mudanças.');
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao verificar status da instância.');
+        });
+}
+</script>
+{% endblock %}

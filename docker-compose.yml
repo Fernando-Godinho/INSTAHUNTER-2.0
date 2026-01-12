@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  instahunter:
+    image: python:3.13-slim
+    container_name: instahunter-app
+    
+    environment:
+      DEBUG: "False"  # Mude para True se precisar debugar
+      SECRET_KEY: "django-insecure-change-me-in-production-with-a-secure-key"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,instahunter.local,instahunter.example.com"
+      CSRF_TRUSTED_ORIGINS: "https://instahunter.example.com,http://instahunter.local:8000,http://127.0.0.1:8000"
+      CSRF_COOKIE_SECURE: "False"  # True em produção com HTTPS
+      SESSION_COOKIE_SECURE: "False"  # True em produção com HTTPS
+      DATABASE_URL: "sqlite:///db.sqlite3"
+      EVOLUTION_API_URL: "https://sua-api-evolution.com"
+      EVOLUTION_API_KEY: "sua-chave-api-evolution"
+      N8N_WEBHOOK_URL: "https://n8n.sumconnectia.tech/webhook/activeSender"
+      PYTHONUNBUFFERED: "1"
+      
+    working_dir: /workspace/instahunter
+    ports:
+      - "8000:8000"
+    
+    volumes:
+      - app_media:/workspace/instahunter/media
+      - app_static:/workspace/instahunter/staticfiles
+      - db_data:/workspace/instahunter/data
+      - ./:/workspace/instahunter  # Para desenvolvimento local
+    
+    command: >
+      sh -c "
+        echo '📦 Atualizando pacotes do sistema...' &&
+        apt-get update -qq &&
+        apt-get install -y -qq git netcat-traditional build-essential pkg-config curl &&
+        
+        echo '📂 Configurando repositório...' &&
+        cd /workspace/instahunter &&
+        if [ -d .git ]; then
+          echo '🔄 Atualizando repositório existente...' &&
+          git reset --hard HEAD &&
+          git pull origin main || git pull origin master;
+        else
+          echo '📥 Clonando repositório...' &&
+          git init &&
+          git remote add origin https://github.com/Fernando-Godinho/INSTAHUNTER-2.0.git &&
+          git fetch origin main master 2>/dev/null &&
+          git reset --hard origin/main || git reset --hard origin/master &&
+          git branch -M main;
+        fi &&
+        
+        echo '🐍 Instalando dependências Python...' &&
+        pip install -q -r requirements.txt &&
+        pip install -q gunicorn whitenoise &&
+        
+        echo '🗄️ Executando migrações do banco de dados...' &&
+        python manage.py migrate --noinput &&
+        
+        echo '📊 Coletando arquivos estáticos...' &&
+        python manage.py collectstatic --noinput --clear &&
+        
+        echo '🚀 Iniciando servidor Gunicorn...' &&
+        gunicorn --bind 0.0.0.0:8000 --workers 4 --worker-class sync --timeout 120 --access-logfile - --error-logfile - instahunter.wsgi:application
+      "
+    
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  app_media:
+    driver: local
+  app_static:
+    driver: local
+  db_data:
+    driver: local

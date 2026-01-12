@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - InstaHunter 2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+    .media-fields {
+        display: none;
+    }
+    .field-visibility-test {
+        border: 2px dashed #28a745;
+        padding: 10px;
+        margin: 10px 0;
+        background-color: #f0fff4;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="bi bi-send-fill"></i> {{ title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Envio em Massa</strong><br>
+                    Envie a mesma mensagem (texto ou arquivo) para múltiplos destinatários. Adicione um número por linha.
+                </div>
+                
+                <form method="post" enctype="multipart/form-data" id="bulkMessageForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.instance.id_for_label }}" class="form-label">
+                            {{ form.instance.label }} *
+                        </label>
+                        {{ form.instance }}
+                        <small class="form-text text-muted">{{ form.instance.help_text }}</small>
+                        {% if form.instance.errors %}
+                            <div class="text-danger">{{ form.instance.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.recipients.id_for_label }}" class="form-label">
+                            {{ form.recipients.label }} *
+                        </label>
+                        {{ form.recipients }}
+                        <small class="form-text text-muted">{{ form.recipients.help_text }}</small>
+                        {% if form.recipients.errors %}
+                            <div class="text-danger">{{ form.recipients.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.message_type.id_for_label }}" class="form-label">
+                            {{ form.message_type.label }} *
+                        </label>
+                        {{ form.message_type }}
+                        {% if form.message_type.errors %}
+                            <div class="text-danger">{{ form.message_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 text-fields">
+                        <label for="{{ form.text_content.id_for_label }}" class="form-label">
+                            {{ form.text_content.label }}
+                        </label>
+                        {{ form.text_content }}
+                        {% if form.text_content.errors %}
+                            <div class="text-danger">{{ form.text_content.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 media-fields field-visibility-test">
+                        <label for="{{ form.media_file.id_for_label }}" class="form-label">
+                            <i class="bi bi-cloud-upload"></i> {{ form.media_file.label }}
+                        </label>
+                        {{ form.media_file }}
+                        <small class="form-text text-muted">{{ form.media_file.help_text }}</small>
+                        {% if form.media_file.errors %}
+                            <div class="text-danger">{{ form.media_file.errors }}</div>
+                        {% endif %}
+                        
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <strong>Tipos aceitos:</strong><br>
+                                <i class="bi bi-image"></i> <strong>Imagem:</strong> JPG, PNG, GIF, WEBP<br>
+                                <i class="bi bi-film"></i> <strong>Vídeo:</strong> MP4, AVI, MOV, MKV, WEBM<br>
+                                <i class="bi bi-music-note"></i> <strong>Áudio:</strong> MP3, OGG, WAV, M4A, AAC<br>
+                                <i class="bi bi-file-earmark"></i> <strong>Documento:</strong> PDF, DOC, XLS, TXT, ZIP<br>
+                                <i class="bi bi-emoji-smile"></i> <strong>Sticker:</strong> PNG, WEBP (sem fundo)<br>
+                                <strong>Tamanho máximo:</strong> 16MB
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 media-fields">
+                        <label for="{{ form.media_caption.id_for_label }}" class="form-label">
+                            {{ form.media_caption.label }}
+                        </label>
+                        {{ form.media_caption }}
+                        {% if form.media_caption.errors %}
+                            <div class="text-danger">{{ form.media_caption.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'instances:message_history' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-send-fill"></i> Enviar para Todos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageType = document.getElementById('id_message_type');
+    const textFields = document.querySelectorAll('.text-fields');
+    const mediaFields = document.querySelectorAll('.media-fields');
+    const fileInput = document.getElementById('id_media_file');
+    
+    function toggleFields() {
+        if (messageType.value === 'text') {
+            textFields.forEach(f => f.style.display = 'block');
+            mediaFields.forEach(f => f.style.display = 'none');
+        } else {
+            textFields.forEach(f => f.style.display = 'none');
+            mediaFields.forEach(f => f.style.display = 'block');
+        }
+    }
+    
+    // Preview do arquivo selecionado
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const fileName = this.files[0].name;
+                const fileSize = (this.files[0].size / 1024 / 1024).toFixed(2);
+                
+                let previewDiv = document.getElementById('file-preview');
+                if (!previewDiv) {
+                    previewDiv = document.createElement('div');
+                    previewDiv.id = 'file-preview';
+                    previewDiv.className = 'alert alert-success mt-2';
+                    this.parentElement.appendChild(previewDiv);
+                }
+                
+                previewDiv.innerHTML = `
+                    <i class="bi bi-check-circle"></i> 
+                    <strong>Arquivo selecionado:</strong> ${fileName} (${fileSize} MB)
+                    <br><small>Este arquivo será enviado para todos os destinatários</small>
+                `;
+            }
+        });
+    }
+    
+    messageType.addEventListener('change', toggleFields);
+    toggleFields();
+});
+</script>
+{% endblock %}

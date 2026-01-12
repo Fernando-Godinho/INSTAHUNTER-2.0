@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Campanha #{{ campaign.id }} - InstaHunter 2.0{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-megaphone"></i> Campanha #{{ campaign.id }}
+            </h2>
+            <div>
+                {% if campaign.status == 'sending' %}
+                    <form method="post" action="{% url 'instances:campaign_cancel' campaign.pk %}" class="d-inline" onsubmit="return confirm('Tem certeza que deseja cancelar esta campanha?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Cancelar Campanha
+                        </button>
+                    </form>
+                {% endif %}
+                <a href="{% url 'instances:campaign_history' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo da Campanha -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Resumo da Campanha</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Instância:</strong> {{ campaign.instance.instance_name }}</p>
+                        <p><strong>Tipo de Mensagem:</strong> {{ campaign.get_message_type_display }}</p>
+                        <p><strong>Modo de Distribuição:</strong> {{ campaign.get_distribuicao_modo_display }}</p>
+                        <p><strong>Tempo Estimado:</strong> {{ campaign.tempo_estimado|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Total de Destinatários:</strong> {{ campaign.total_recipients }}</p>
+                        <p><strong>Enviadas com Sucesso:</strong> <span class="text-success">{{ campaign.success_count }}</span></p>
+                        <p><strong>Erros:</strong> <span class="text-danger">{{ campaign.error_count }}</span></p>
+                        <p><strong>Status:</strong> 
+                            {% if campaign.status == 'pending' %}
+                                <span class="badge bg-secondary">Pendente</span>
+                            {% elif campaign.status == 'sending' %}
+                                <span class="badge bg-warning">Enviando</span>
+                            {% elif campaign.status == 'completed' %}
+                                <span class="badge bg-success">Concluída</span>
+                            {% elif campaign.status == 'error' %}
+                                <span class="badge bg-danger">{% if campaign.cancelled %}Cancelada{% else %}Erro{% endif %}</span>
+                            {% endif %}
+                        </p>
+                        {% if campaign.cancelled %}
+                            <p class="text-warning"><i class="bi bi-exclamation-triangle"></i> <strong>Esta campanha foi cancelada</strong></p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if campaign.text_content %}
+                    <hr>
+                    <p><strong>Mensagem:</strong></p>
+                    <div class="alert alert-secondary">{{ campaign.text_content }}</div>
+                {% endif %}
+                
+                {% if campaign.media_caption %}
+                    <hr>
+                    <p><strong>Legenda:</strong></p>
+                    <div class="alert alert-secondary">{{ campaign.media_caption }}</div>
+                {% endif %}
+                
+                <hr>
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 class="text-primary">{{ campaign.total_recipients }}</h3>
+                                <p class="mb-0">Total</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ campaign.success_count }}</h3>
+                                <p class="mb-0">Sucesso</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 class="text-danger">{{ campaign.error_count }}</h3>
+                                <p class="mb-0">Erros</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Mensagens da Campanha -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Mensagens Enviadas ({{ messages.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Destinatário</th>
+                                    <th>Status</th>
+                                    <th>Data</th>
+                                    <th>Erro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for message in messages %}
+                                    <tr>
+                                        <td><strong>{{ message.recipient }}</strong></td>
+                                        <td>
+                                            {% if message.status == 'pending' %}
+                                                <span class="badge bg-secondary">Pendente</span>
+                                            {% elif message.status == 'sent' %}
+                                                <span class="badge bg-success">Enviada</span>
+                                            {% elif message.status == 'error' %}
+                                                <span class="badge bg-danger">Erro</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ message.created_at|date:"d/m/Y H:i:s" }}</td>
+                                        <td>
+                                            {% if message.error_message %}
+                                                <small class="text-danger">{{ message.error_message|truncatewords:10 }}</small>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Nenhuma mensagem encontrada.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if campaign.status == 'sending' and not campaign.cancelled %}
+<script>
+    // Auto-refresh a cada 3 segundos quando a campanha estiver em andamento
+    setTimeout(function() {
+        location.reload();
+    }, 3000);
+</script>
+{% endif %}
+{% endblock %}

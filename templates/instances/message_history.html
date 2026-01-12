@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Histórico de Mensagens - InstaHunter 2.0{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-clock-history"></i> Histórico de Mensagens
+            </h2>
+            <div>
+                <a href="{% url 'instances:message_send' %}" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Enviar Mensagem
+                </a>
+                <form method="post" action="{% url 'instances:message_clear_errors' %}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja limpar todas as mensagens com erro?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Limpar Erros
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Instância</label>
+                        <select name="instance" class="form-select">
+                            <option value="">Todas</option>
+                            {% for inst in instances %}
+                                <option value="{{ inst.id }}" {% if selected_instance == inst.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ inst.instance_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="pending" {% if selected_status == "pending" %}selected{% endif %}>Pendente</option>
+                            <option value="sent" {% if selected_status == "sent" %}selected{% endif %}>Enviada</option>
+                            <option value="error" {% if selected_status == "error" %}selected{% endif %}>Erro</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if messages %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Instância</th>
+                                    <th>Destinatário</th>
+                                    <th>Tipo</th>
+                                    <th>Mensagem</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for msg in messages %}
+                                <tr>
+                                    <td>{{ msg.sent_at|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ msg.instance.instance_name }}</td>
+                                    <td>{{ msg.recipient }}</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ msg.get_message_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if msg.text_content %}
+                                            {{ msg.text_content|truncatewords:10 }}
+                                        {% elif msg.media_url %}
+                                            <a href="{{ msg.media_url }}" target="_blank">
+                                                <i class="bi bi-link-45deg"></i> Mídia
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if msg.status == 'sent' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Enviada
+                                            </span>
+                                        {% elif msg.status == 'pending' %}
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-clock"></i> Pendente
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger" title="{{ msg.error_message }}">
+                                                <i class="bi bi-x-circle"></i> Erro
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <p class="lead text-muted mt-3">Nenhuma mensagem enviada ainda.</p>
+                        <a href="{% url 'instances:message_send' %}" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Enviar Primeira Mensagem
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

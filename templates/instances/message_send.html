@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - InstaHunter 2.0{% endblock %}
+
+{% block extra_css %}
+<style>
+    .media-fields {
+        display: none;
+    }
+    .field-visibility-test {
+        border: 2px dashed #007bff;
+        padding: 10px;
+        margin: 10px 0;
+        background-color: #f0f8ff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="bi bi-send"></i> {{ title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Envio Individual ou em Massa</strong><br>
+                    • Para <strong>envio único</strong>: adicione apenas um número<br>
+                    • Para <strong>envio em massa</strong>: adicione vários números (um por linha)<br>
+                    • Selecione o tipo de mensagem para ver as opções de envio
+                </div>
+                
+                <form method="post" enctype="multipart/form-data" id="messageForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.instance.id_for_label }}" class="form-label">
+                            {{ form.instance.label }} *
+                        </label>
+                        {{ form.instance }}
+                        <small class="form-text text-muted">{{ form.instance.help_text }}</small>
+                        {% if form.instance.errors %}
+                            <div class="text-danger">{{ form.instance.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.recipients.id_for_label }}" class="form-label">
+                            {{ form.recipients.label }} *
+                        </label>
+                        {{ form.recipients }}
+                        <small class="form-text text-muted">{{ form.recipients.help_text }}</small>
+                        {% if form.recipients.errors %}
+                            <div class="text-danger">{{ form.recipients.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.message_type.id_for_label }}" class="form-label">
+                            {{ form.message_type.label }} *
+                        </label>
+                        {{ form.message_type }}
+                        {% if form.message_type.errors %}
+                            <div class="text-danger">{{ form.message_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 text-fields">
+                        <label for="{{ form.text_content.id_for_label }}" class="form-label">
+                            {{ form.text_content.label }}
+                        </label>
+                        {{ form.text_content }}
+                        {% if form.text_content.errors %}
+                            <div class="text-danger">{{ form.text_content.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 media-fields field-visibility-test">
+                        <label for="{{ form.media_file.id_for_label }}" class="form-label">
+                            <i class="bi bi-cloud-upload"></i> {{ form.media_file.label }}
+                        </label>
+                        {{ form.media_file }}
+                        <small class="form-text text-muted">{{ form.media_file.help_text }}</small>
+                        {% if form.media_file.errors %}
+                            <div class="text-danger">{{ form.media_file.errors }}</div>
+                        {% endif %}
+                        
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <strong>Tipos aceitos:</strong><br>
+                                <i class="bi bi-image"></i> <strong>Imagem:</strong> JPG, PNG, GIF, WEBP<br>
+                                <i class="bi bi-film"></i> <strong>Vídeo:</strong> MP4, AVI, MOV, MKV, WEBM<br>
+                                <i class="bi bi-music-note"></i> <strong>Áudio:</strong> MP3, OGG, WAV, M4A, AAC<br>
+                                <i class="bi bi-file-earmark"></i> <strong>Documento:</strong> PDF, DOC, XLS, TXT, ZIP<br>
+                                <i class="bi bi-emoji-smile"></i> <strong>Sticker:</strong> PNG, WEBP (sem fundo)<br>
+                                <strong>Tamanho máximo:</strong> 16MB
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 media-fields">
+                        <label for="{{ form.media_caption.id_for_label }}" class="form-label">
+                            {{ form.media_caption.label }}
+                        </label>
+                        {{ form.media_caption }}
+                        {% if form.media_caption.errors %}
+                            <div class="text-danger">{{ form.media_caption.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="distribution-section">
+                        <hr class="my-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-clock"></i> Distribuição de Envio
+                        </h5>
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="bi bi-info-circle"></i>
+                                Configure como as mensagens serão enviadas ao longo do tempo para simular comportamento humano e evitar bloqueios.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.distribuicao_modo.id_for_label }}" class="form-label">
+                                {{ form.distribuicao_modo.label }} *
+                            </label>
+                            {{ form.distribuicao_modo }}
+                            <small class="form-text text-muted">{{ form.distribuicao_modo.help_text }}</small>
+                            {% if form.distribuicao_modo.errors %}
+                                <div class="text-danger">{{ form.distribuicao_modo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3" id="hora-limite-field" style="display: none;">
+                            <label for="{{ form.hora_limite.id_for_label }}" class="form-label">
+                                {{ form.hora_limite.label }}
+                            </label>
+                            {{ form.hora_limite }}
+                            <small class="form-text text-muted">{{ form.hora_limite.help_text }}</small>
+                            {% if form.hora_limite.errors %}
+                                <div class="text-danger">{{ form.hora_limite.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3" id="tempo-total-field" style="display: none;">
+                            <label for="{{ form.tempo_total_minutos.id_for_label }}" class="form-label">
+                                {{ form.tempo_total_minutos.label }}
+                            </label>
+                            {{ form.tempo_total_minutos }}
+                            <small class="form-text text-muted">{{ form.tempo_total_minutos.help_text }}</small>
+                            {% if form.tempo_total_minutos.errors %}
+                                <div class="text-danger">{{ form.tempo_total_minutos.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div id="distribution-preview" class="alert alert-secondary" style="display: none;">
+                            <i class="bi bi-clock-history"></i>
+                            <strong>Estimativa de envio:</strong>
+                            <div id="preview-text"></div>
+                        </div>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'instances:message_history' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send-fill"></i> Enviar Mensagem
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageType = document.getElementById('id_message_type');
+    const textFields = document.querySelectorAll('.text-fields');
+    const mediaFields = document.querySelectorAll('.media-fields');
+    const fileInput = document.getElementById('id_media_file');
+    
+    // Campos de distribuição
+    const distribuicaoModo = document.getElementById('id_distribuicao_modo');
+    const horaLimiteField = document.getElementById('hora-limite-field');
+    const tempoTotalField = document.getElementById('tempo-total-field');
+    const distributionPreview = document.getElementById('distribution-preview');
+    const previewText = document.getElementById('preview-text');
+    const recipientsField = document.getElementById('id_recipients');
+    const horaLimiteInput = document.getElementById('id_hora_limite');
+    const tempoTotalInput = document.getElementById('id_tempo_total_minutos');
+    
+    console.log('Campos de texto encontrados:', textFields.length);
+    console.log('Campos de mídia encontrados:', mediaFields.length);
+    console.log('Campo de arquivo existe:', fileInput !== null);
+    
+    function toggleFields() {
+        console.log('Tipo de mensagem selecionado:', messageType.value);
+        
+        if (messageType.value === 'text') {
+            textFields.forEach(f => {
+                f.style.display = 'block';
+                console.log('Mostrando campo de texto');
+            });
+            mediaFields.forEach(f => {
+                f.style.display = 'none';
+                console.log('Ocultando campo de mídia');
+            });
+        } else {
+            textFields.forEach(f => {
+                f.style.display = 'none';
+                console.log('Ocultando campo de texto');
+            });
+            mediaFields.forEach(f => {
+                f.style.display = 'block';
+                console.log('Mostrando campo de mídia');
+            });
+        }
+    }
+    
+    function toggleDistributionFields() {
+        const modo = distribuicaoModo.value;
+        
+        // Ocultar todos os campos condicionais
+        horaLimiteField.style.display = 'none';
+        tempoTotalField.style.display = 'none';
+        
+        // Mostrar campos baseado no modo selecionado
+        if (modo === 'ate_horario') {
+            horaLimiteField.style.display = 'block';
+        } else if (modo === 'tempo_total') {
+            tempoTotalField.style.display = 'block';
+        }
+        
+        updateDistributionPreview();
+    }
+    
+    function updateDistributionPreview() {
+        const modo = distribuicaoModo.value;
+        const recipientsText = recipientsField.value.trim();
+        const numRecipients = recipientsText ? recipientsText.split('\n').filter(r => r.trim()).length : 0;
+        
+        if (numRecipients === 0) {
+            distributionPreview.style.display = 'none';
+            return;
+        }
+        
+        let preview = '';
+        
+        if (modo === 'imediato') {
+            const minTime = numRecipients * 1;
+            const maxTime = numRecipients * 3;
+            preview = `${numRecipients} mensagens serão enviadas com intervalo aleatório entre 1-3 segundos.<br>`;
+            preview += `<strong>Tempo estimado:</strong> ${minTime}-${maxTime} segundos (${Math.ceil(minTime/60)}-${Math.ceil(maxTime/60)} minutos)`;
+        } else if (modo === 'ate_horario') {
+            const horaLimite = horaLimiteInput.value;
+            if (horaLimite) {
+                const now = new Date();
+                const targetTime = new Date(now);
+                targetTime.setHours(parseInt(horaLimite), 0, 0, 0);
+                
+                let diffMinutes = (targetTime - now) / 1000 / 60;
+                if (diffMinutes < 0) {
+                    diffMinutes += 24 * 60; // Adicionar 24 horas se o horário já passou hoje
+                }
+                
+                const diffHours = Math.floor(diffMinutes / 60);
+                const diffMins = Math.floor(diffMinutes % 60);
+                
+                preview = `${numRecipients} mensagens serão distribuídas até às ${horaLimite}:00.<br>`;
+                preview += `<strong>Tempo disponível:</strong> ${diffHours}h ${diffMins}min<br>`;
+                preview += `<strong>Intervalo médio:</strong> ${Math.ceil(diffMinutes / numRecipients)} minutos entre cada envio`;
+            }
+        } else if (modo === 'tempo_total') {
+            const tempoTotal = tempoTotalInput.value;
+            if (tempoTotal) {
+                const intervaloMedio = Math.ceil(tempoTotal / numRecipients);
+                const horas = Math.floor(tempoTotal / 60);
+                const minutos = tempoTotal % 60;
+                
+                preview = `${numRecipients} mensagens serão distribuídas ao longo de `;
+                if (horas > 0) preview += `${horas}h `;
+                if (minutos > 0) preview += `${minutos}min`;
+                preview += `.<br><strong>Intervalo médio:</strong> ${intervaloMedio} minutos entre cada envio`;
+            }
+        }
+        
+        if (preview) {
+            previewText.innerHTML = preview;
+            distributionPreview.style.display = 'block';
+        } else {
+            distributionPreview.style.display = 'none';
+        }
+    }
+    
+    // Preview do arquivo selecionado
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const fileName = this.files[0].name;
+                const fileSize = (this.files[0].size / 1024 / 1024).toFixed(2);
+                
+                // Criar preview
+                let previewDiv = document.getElementById('file-preview');
+                if (!previewDiv) {
+                    previewDiv = document.createElement('div');
+                    previewDiv.id = 'file-preview';
+                    previewDiv.className = 'alert alert-success mt-2';
+                    this.parentElement.appendChild(previewDiv);
+                }
+                
+                previewDiv.innerHTML = `
+                    <i class="bi bi-check-circle"></i> 
+                    <strong>Arquivo selecionado:</strong> ${fileName} (${fileSize} MB)
+                `;
+            }
+        });
+    }
+    
+    // Event listeners
+    messageType.addEventListener('change', toggleFields);
+    distribuicaoModo.addEventListener('change', toggleDistributionFields);
+    recipientsField.addEventListener('input', updateDistributionPreview);
+    horaLimiteInput.addEventListener('input', updateDistributionPreview);
+    tempoTotalInput.addEventListener('input', updateDistributionPreview);
+    
+    // Executar ao carregar a página
+    toggleFields();
+    toggleDistributionFields();
+});
+</script>
+{% endblock %}
