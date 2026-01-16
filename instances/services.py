@@ -29,15 +29,12 @@ class EvolutionAPIService:
             "instanceName": instance_data['instance_name'],
             "qrcode": instance_data.get('qrcode', True),
             "integration": instance_data.get('integration_type', 'WHATSAPP-BAILEYS'),
+            "token": instance_data.get('token', self.api_key),  # Token é obrigatório
         }
         
         # Adicionar número se fornecido
         if instance_data.get('number'):
             payload['number'] = instance_data['number']
-        
-        # Adicionar token se fornecido
-        if instance_data.get('token'):
-            payload['token'] = instance_data['token']
         
         # Configurações
         if instance_data.get('reject_call'):
@@ -65,18 +62,27 @@ class EvolutionAPIService:
                 'base64': instance_data.get('webhook_base64', True),
             }
         
+        print(f"[DEBUG] Criando instância - URL: {url}")
+        print(f"[DEBUG] Payload: {payload}")
+        
         try:
             response = requests.post(url, json=payload, headers=self.headers, timeout=30)
+            print(f"[DEBUG] Status Code: {response.status_code}")
+            print(f"[DEBUG] Response: {response.text}")
             response.raise_for_status()
             
             # Tentar fazer parse do JSON
             try:
-                return response.json()
+                result = response.json()
+                print(f"[DEBUG] Resposta JSON: {result}")
+                return result
             except ValueError:
                 return {'error': f'Resposta inválida da API: {response.text}'}
                 
         except requests.exceptions.RequestException as e:
+            print(f"[DEBUG] Erro: {str(e)}")
             if hasattr(e, 'response') and e.response is not None:
+                print(f"[DEBUG] Erro Response: {e.response.text}")
                 return {'error': f'{str(e)} - {e.response.text}'}
             return {'error': str(e)}
     
@@ -96,19 +102,71 @@ class EvolutionAPIService:
     def connect_instance(self, instance_name: str, number: Optional[str] = None) -> Dict:
         """
         Conecta uma instância (gera QR Code)
+        Tenta vários endpoints até encontrar o correto
         """
-        url = f"{self.base_url}/instance/connect/{instance_name}"
+        # Primeiro, verificar se a instância existe
+        status_check = self.get_instance_status(instance_name)
+        if 'error' in status_check:
+            print(f"[DEBUG] Instância '{instance_name}' não existe na API: {status_check['error']}")
+            return {'error': f"Instância não existe na API: {status_check['error']}"}
         
-        params = {}
-        if number:
-            params['number'] = number
+        print(f"[DEBUG] Status check bem-sucedido: {status_check}")
         
-        try:
-            response = requests.get(url, headers=self.headers, params=params, timeout=30)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            return {'error': str(e)}
+        # Lista de endpoints a tentar (em ordem de preferência)
+        endpoints = [
+            (f"{self.base_url}/instance/qrcode/{instance_name}", 'GET', {}),
+            (f"{self.base_url}/instances/{instance_name}/qrcode", 'GET', {}),
+            (f"{self.base_url}/instance/{instance_name}/qrcode", 'GET', {}),
+            (f"{self.base_url}/instance/connect/{instance_name}", 'POST', {'number': number} if number else {}),
+            (f"{self.base_url}/instance/{instance_name}/connect", 'GET', {}),
+        ]
+        
+        for url, method, payload in endpoints:
+            print(f"\n[DEBUG] ========================================")
+            print(f"[DEBUG] Tentando {method} - URL: {url}")
+            print(f"[DEBUG] Payload: {payload if payload else 'Nenhum'}")
+            
+            try:
+                if method == 'GET':
+                    response = requests.get(url, headers=self.headers, timeout=30)
+                else:
+                    response = requests.post(url, json=payload if payload else {}, headers=self.headers, timeout=30)
+                
+                print(f"[DEBUG] Status Code: {response.status_code}")
+                print(f"[DEBUG] Headers: {dict(response.headers)}")
+                print(f"[DEBUG] Response: {response.text[:500]}")  # Primeiros 500 chars
+                
+                # Aceitar 200, 201, 202 como sucesso
+                if response.status_code in [200, 201, 202]:
+                    try:
+                        result = response.json()
+                        print(f"[DEBUG] ✓ SUCESSO! Endpoint funcionou: {url}")
+                        return result
+                    except:
+                        print(f"[DEBUG] ✗ Resposta não é JSON válido")
+                        continue
+                else:
+                    print(f"[DEBUG] ✗ Status {response.status_code}, tentando próximo endpoint...")
+                    
+            except requests.exceptions.RequestException as e:
+                print(f"[DEBUG] ✗ Exceção RequestException: {type(e).__name__}")
+                print(f"[DEBUG] Mensagem: {str(e)}")
+                if hasattr(e, 'response') and e.response is not None:
+                    print(f"[DEBUG] Resposta de erro: {e.response.text[:500]}")
+                continue
+            except Exception as e:
+                print(f"[DEBUG] ✗ Erro inesperado: {type(e).__name__}: {str(e)}")
+                continue
+        
+        print(f"\n[DEBUG] ========================================")
+        print(f"[DEBUG] ✗ FALHA TOTAL: Nenhum endpoint funcionou!")
+        print(f"[DEBUG] URL Base: {self.base_url}")
+        print(f"[DEBUG] Nome da instância: {instance_name}")
+        print(f"[DEBUG] Headers enviados: {self.headers}")
+        print(f"[DEBUG] ========================================\n")
+        
+        # Se nenhum endpoint funcionou
+        return {'error': 'Nenhum endpoint para gerar QR Code funcionou. Verifique os logs acima para detalhes.'}
     
     def restart_instance(self, instance_name: str) -> Dict:
         """

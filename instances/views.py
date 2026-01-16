@@ -72,6 +72,16 @@ def instance_create(request):
                 messages.error(request, f'Erro ao criar instância: {result["error"]}')
                 return redirect('instances:instance_detail', pk=instance.pk)
             else:
+                # Validar que a instância foi criada verificando o status
+                status_result = api_service.get_instance_status(instance.instance_name)
+                
+                if 'error' in status_result:
+                    # Instância não existe na API
+                    instance.status = 'error'
+                    instance.save()
+                    messages.error(request, f'Instância criada no banco mas não respondeu na API: {status_result["error"]}')
+                    return redirect('instances:instance_detail', pk=instance.pk)
+                
                 # Armazenar informações retornadas pela API (SEM o QR Code)
                 instance.instance_id = result.get('instance', {}).get('instanceId') if isinstance(result.get('instance'), dict) else None
                 instance.token = result.get('hash', {}).get('apikey') if isinstance(result.get('hash'), dict) else None
@@ -132,16 +142,10 @@ def instance_delete(request, pk):
     instance = get_object_or_404(Instance, pk=pk)
     
     if request.method == 'POST':
-        # Deletar da Evolution API
-        api_service = EvolutionAPIService()
-        result = api_service.delete_instance(instance.instance_name)
-        
-        if 'error' in result:
-            messages.error(request, f'Erro ao deletar instância: {result["error"]}')
-        else:
-            instance.delete()
-            messages.success(request, 'Instância deletada com sucesso!')
-            return redirect('instances:instance_list')
+        # Deletar apenas localmente (sem chamar Evolution API)
+        instance.delete()
+        messages.success(request, 'Instância deletada com sucesso!')
+        return redirect('instances:instance_list')
     
     context = {
         'instance': instance
@@ -155,13 +159,24 @@ def instance_connect(request, pk):
     """
     instance = get_object_or_404(Instance, pk=pk)
     
+    print(f"[DEBUG] Iniciando conexão da instância: {instance.instance_name} (Status: {instance.status})")
+    
+    # Verificar se a instância foi criada com sucesso
+    if instance.status == 'error':
+        messages.error(request, 'Instância não foi criada na Evolution API. Verifique os logs e tente criar novamente.')
+        return redirect('instances:instance_detail', pk=instance.pk)
+    
     api_service = EvolutionAPIService()
     result = api_service.connect_instance(instance.instance_name, instance.number)
     
-    print(f"Connect Result: {result}")  # Debug
+    print(f"[DEBUG] Connect Result: {result}")
     
     if 'error' in result:
-        messages.error(request, f'Erro ao conectar instância: {result["error"]}')
+        # Verificar se é erro de instância não encontrada
+        if '404' in str(result.get('error', '')).upper() or 'not found' in str(result.get('error', '')).lower() or 'não existe' in str(result.get('error', '')).lower():
+            messages.error(request, f'❌ Instância não existe na Evolution API. Ela pode não ter sido criada corretamente. Erro: {result["error"]}')
+        else:
+            messages.error(request, f'Erro ao conectar instância: {result["error"]}')
     else:
         # Verificar diferentes formatos de resposta da API
         qrcode_saved = False
@@ -183,7 +198,8 @@ def instance_connect(request, pk):
         
         if qrcode_saved:
             instance.save()
-            print(f"QR Code salvo com sucesso!")  # Debug
+            print(f"[DEBUG] QR Code salvo com sucesso!")
+            messages.success(request, 'QR Code gerado com sucesso!')
             messages.success(request, 'QR Code gerado! Escaneie com seu WhatsApp.')
         else:
             print(f"Estrutura do result: {result}")  # Debug completo
