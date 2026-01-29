@@ -42,11 +42,11 @@ def instance_create(request):
             
             # Criar instância na Evolution API
             api_service = EvolutionAPIService()
-            result = api_service.create_instance({
+            instance_data = {
                 'instance_name': instance.instance_name,
                 'number': instance.number,
                 'integration_type': instance.integration_type,
-                'qrcode': False,  # Não gerar QR Code na criação
+                'qrcode': True,  # Sempre tentar gerar QR Code na criação
                 'reject_call': instance.reject_call,
                 'msg_call': instance.msg_call,
                 'groups_ignore': instance.groups_ignore,
@@ -56,10 +56,14 @@ def instance_create(request):
                 'webhook_url': instance.webhook_url,
                 'webhook_by_events': instance.webhook_by_events,
                 'webhook_base64': instance.webhook_base64,
-            })
+            }
+            print(f"[instance_create] Chamando api_service.create_instance com dados: {instance_data}")
+            result = api_service.create_instance(instance_data)
+            print(f"[instance_create] Resultado recebido: {result}")
             
             # Verificar se result é um dicionário
             if not isinstance(result, dict):
+                print(f"[instance_create] Erro: result não é dict. Tipo: {type(result)}")
                 instance.status = 'error'
                 instance.save()
                 messages.error(request, f'Erro ao criar instância: Resposta inválida da API')
@@ -82,14 +86,47 @@ def instance_create(request):
                     messages.error(request, f'Instância criada no banco mas não respondeu na API: {status_result["error"]}')
                     return redirect('instances:instance_detail', pk=instance.pk)
                 
-                # Armazenar informações retornadas pela API (SEM o QR Code)
+                # Armazenar informações retornadas pela API
                 instance.instance_id = result.get('instance', {}).get('instanceId') if isinstance(result.get('instance'), dict) else None
-                instance.token = result.get('hash', {}).get('apikey') if isinstance(result.get('hash'), dict) else None
-                # NÃO salvar o QR Code na criação - usuário deve clicar em "Gerar QR Code"
-                instance.status = 'created'
-                instance.save()
+                instance.token = result.get('hash') if isinstance(result.get('hash'), str) else None
+                print(f"[instance_create] instance_id: {instance.instance_id}, token: {instance.token}")
                 
-                messages.success(request, 'Instância criada com sucesso! Clique em "Conectar / Gerar QR Code" para conectar.')
+                # Tentar extrair QR Code da resposta de criação
+                qrcode_saved = False
+                
+                print(f"[instance_create] Tentando extrair QR Code. result keys: {result.keys()}")
+                
+                # Formato 1: result['qrcode']['base64']
+                if isinstance(result, dict) and 'qrcode' in result:
+                    print(f"[instance_create] 'qrcode' encontrado em result. Tipo: {type(result['qrcode'])}")
+                    if isinstance(result['qrcode'], dict) and 'base64' in result['qrcode']:
+                        instance.qrcode_base64 = result['qrcode']['base64']
+                        qrcode_saved = True
+                        instance.status = 'connecting'
+                        print(f"[instance_create] ✓ QR Code extraído na criação (formato 1). Tamanho: {len(instance.qrcode_base64)}")
+                    # Formato 2: result['qrcode'] já é a string base64
+                    elif isinstance(result['qrcode'], str):
+                        instance.qrcode_base64 = result['qrcode']
+                        qrcode_saved = True
+                        instance.status = 'connecting'
+                        print(f"[instance_create] ✓ QR Code extraído na criação (formato 2). Tamanho: {len(instance.qrcode_base64)}")
+                else:
+                    print(f"[instance_create] 'qrcode' NÃO encontrado em result")
+                
+                # Se não conseguir extrair, deixar em status created
+                if not qrcode_saved:
+                    instance.status = 'created'
+                    print(f"[instance_create] ⚠ Não foi possível extrair QR Code na criação")
+                
+                print(f"[instance_create] Salvando instância. qrcode_saved: {qrcode_saved}, status: {instance.status}")
+                instance.save()
+                print(f"[instance_create] Instância salva. ID: {instance.pk}")
+                
+                if qrcode_saved:
+                    messages.success(request, 'Instância criada com sucesso! QR Code gerado. Escaneie com seu WhatsApp.')
+                else:
+                    messages.success(request, 'Instância criada com sucesso! Clique em "Conectar / Gerar QR Code" para conectar.')
+                
                 return redirect('instances:instance_detail', pk=instance.pk)
     else:
         form = InstanceForm()
@@ -155,7 +192,7 @@ def instance_delete(request, pk):
 
 def instance_connect(request, pk):
     """
-    Conecta uma instância (gera QR Code)
+    Conecta uma instância (verifica status de conexão)
     """
     instance = get_object_or_404(Instance, pk=pk)
     
@@ -166,44 +203,40 @@ def instance_connect(request, pk):
         messages.error(request, 'Instância não foi criada na Evolution API. Verifique os logs e tente criar novamente.')
         return redirect('instances:instance_detail', pk=instance.pk)
     
+    # Verificar conexão com Evolution API
     api_service = EvolutionAPIService()
+    connection_check = api_service.check_connection()
+    if connection_check['status'] == 'error':
+        messages.error(request, f'❌ Erro de conexão com Evolution API: {connection_check["message"]}. Verifique se o serviço está rodando e a URL está correta.')
+        return redirect('instances:instance_detail', pk=instance.pk)
+    
+    # Conectar/verificar status
     result = api_service.connect_instance(instance.instance_name, instance.number)
     
     print(f"[DEBUG] Connect Result: {result}")
     
     if 'error' in result:
-        # Verificar se é erro de instância não encontrada
-        if '404' in str(result.get('error', '')).upper() or 'not found' in str(result.get('error', '')).lower() or 'não existe' in str(result.get('error', '')).lower():
-            messages.error(request, f'❌ Instância não existe na Evolution API. Ela pode não ter sido criada corretamente. Erro: {result["error"]}')
-        else:
-            messages.error(request, f'Erro ao conectar instância: {result["error"]}')
+        messages.error(request, f'Erro ao conectar instância: {result["error"]}')
     else:
-        # Verificar diferentes formatos de resposta da API
-        qrcode_saved = False
+        # Resposta esperada: {"instance": {"instanceName": "...", "state": "open/connecting/..."}}
+        instance_data = result.get('instance', {})
+        state = instance_data.get('state', 'unknown')
         
-        # Formato 1: result['qrcode']['base64']
-        if isinstance(result, dict) and 'qrcode' in result:
-            if isinstance(result['qrcode'], dict) and 'base64' in result['qrcode']:
-                instance.qrcode_base64 = result['qrcode']['base64']
-                qrcode_saved = True
-            # Formato 2: result['qrcode'] já é a string base64
-            elif isinstance(result['qrcode'], str):
-                instance.qrcode_base64 = result['qrcode']
-                qrcode_saved = True
+        print(f"[DEBUG] Estado da instância: {state}")
         
-        # Formato 3: result['base64'] direto
-        if not qrcode_saved and 'base64' in result:
-            instance.qrcode_base64 = result['base64']
-            qrcode_saved = True
-        
-        if qrcode_saved:
+        if state == 'open':
+            instance.status = 'connected'
             instance.save()
-            print(f"[DEBUG] QR Code salvo com sucesso!")
-            messages.success(request, 'QR Code gerado com sucesso!')
-            messages.success(request, 'QR Code gerado! Escaneie com seu WhatsApp.')
+            messages.success(request, '✓ Instância conectada com sucesso! Aguarde a sincronização.')
+        elif state == 'connecting':
+            if instance.status != 'connecting':
+                instance.status = 'connecting'
+                instance.save()
+            messages.info(request, '⏳ Instância em processo de conexão. Aguarde alguns segundos e verifique novamente.')
         else:
-            print(f"Estrutura do result: {result}")  # Debug completo
-            messages.warning(request, f'Não foi possível obter o QR Code. Estrutura da resposta: {list(result.keys()) if isinstance(result, dict) else type(result)}')
+            instance.status = state
+            instance.save()
+            messages.info(request, f'Estado da instância: {state}')
     
     return redirect('instances:instance_detail', pk=pk)
 

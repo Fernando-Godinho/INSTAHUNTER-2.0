@@ -19,6 +19,40 @@ class EvolutionAPIService:
             'Content-Type': 'application/json'
         }
     
+    def check_connection(self) -> Dict:
+        """
+        Verifica a conectividade com a Evolution API
+        """
+        print(f"[DEBUG] Verificando conexão com Evolution API")
+        print(f"[DEBUG] URL: {self.base_url}")
+        print(f"[DEBUG] API Key: {self.api_key[:20]}...")
+        
+        try:
+            # Tentar acessar o endpoint de fetch instances
+            response = requests.get(
+                f"{self.base_url}/instance/fetchInstances", 
+                headers=self.headers, 
+                timeout=10
+            )
+            print(f"[DEBUG] Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                print(f"[DEBUG] ✓ Conexão OK com a Evolution API")
+                return {'status': 'success', 'message': 'Conectado à Evolution API'}
+            else:
+                print(f"[DEBUG] ✗ Status inesperado: {response.status_code}")
+                return {'status': 'error', 'message': f'Status {response.status_code}', 'details': response.text}
+                
+        except requests.exceptions.Timeout:
+            print(f"[DEBUG] ✗ Timeout - Evolution API não responde")
+            return {'status': 'error', 'message': 'Timeout - Evolution API não responde'}
+        except requests.exceptions.ConnectionError:
+            print(f"[DEBUG] ✗ Erro de conexão")
+            return {'status': 'error', 'message': 'Erro de conexão - verifique a URL e firewall'}
+        except Exception as e:
+            print(f"[DEBUG] ✗ Erro: {str(e)}")
+            return {'status': 'error', 'message': str(e)}
+    
     def create_instance(self, instance_data: Dict) -> Dict:
         """
         Cria uma nova instância na Evolution API
@@ -75,6 +109,13 @@ class EvolutionAPIService:
             try:
                 result = response.json()
                 print(f"[DEBUG] Resposta JSON: {result}")
+                
+                # Extrair QR Code da resposta se disponível
+                if 'qrcode' in result and isinstance(result['qrcode'], dict) and 'base64' in result['qrcode']:
+                    print(f"[DEBUG] ✓ QR Code obtido na criação!")
+                elif 'qrcode' in result and isinstance(result['qrcode'], str):
+                    print(f"[DEBUG] ✓ QR Code (string) obtido na criação!")
+                
                 return result
             except ValueError:
                 return {'error': f'Resposta inválida da API: {response.text}'}
@@ -101,72 +142,75 @@ class EvolutionAPIService:
     
     def connect_instance(self, instance_name: str, number: Optional[str] = None) -> Dict:
         """
-        Conecta uma instância (gera QR Code)
-        Tenta vários endpoints até encontrar o correto
+        Conecta uma instância (obtém informações de conexão)
+        Usa o endpoint GET /instance/connect/{instanceName}
+        
+        Retorna:
+        {
+            "instance": {
+                "instanceName": "RHINO",
+                "state": "open"  # ou "connecting", "disconnected"
+            }
+        }
         """
-        # Primeiro, verificar se a instância existe
-        status_check = self.get_instance_status(instance_name)
-        if 'error' in status_check:
-            print(f"[DEBUG] Instância '{instance_name}' não existe na API: {status_check['error']}")
-            return {'error': f"Instância não existe na API: {status_check['error']}"}
+        print(f"[DEBUG] Conectando instância: {instance_name}")
         
-        print(f"[DEBUG] Status check bem-sucedido: {status_check}")
+        # Endpoint principal: GET /instance/connect/{instanceName}
+        connect_url = f"{self.base_url}/instance/connect/{instance_name}"
         
-        # Lista de endpoints a tentar (em ordem de preferência)
-        endpoints = [
-            (f"{self.base_url}/instance/qrcode/{instance_name}", 'GET', {}),
-            (f"{self.base_url}/instances/{instance_name}/qrcode", 'GET', {}),
-            (f"{self.base_url}/instance/{instance_name}/qrcode", 'GET', {}),
-            (f"{self.base_url}/instance/connect/{instance_name}", 'POST', {'number': number} if number else {}),
-            (f"{self.base_url}/instance/{instance_name}/connect", 'GET', {}),
-        ]
+        print(f"[DEBUG] URL de conexão: {connect_url}")
+        print(f"[DEBUG] Enviando GET para {connect_url}")
         
-        for url, method, payload in endpoints:
-            print(f"\n[DEBUG] ========================================")
-            print(f"[DEBUG] Tentando {method} - URL: {url}")
-            print(f"[DEBUG] Payload: {payload if payload else 'Nenhum'}")
+        try:
+            response = requests.get(connect_url, headers=self.headers, timeout=30)
             
-            try:
-                if method == 'GET':
-                    response = requests.get(url, headers=self.headers, timeout=30)
-                else:
-                    response = requests.post(url, json=payload if payload else {}, headers=self.headers, timeout=30)
-                
-                print(f"[DEBUG] Status Code: {response.status_code}")
-                print(f"[DEBUG] Headers: {dict(response.headers)}")
-                print(f"[DEBUG] Response: {response.text[:500]}")  # Primeiros 500 chars
-                
-                # Aceitar 200, 201, 202 como sucesso
-                if response.status_code in [200, 201, 202]:
-                    try:
-                        result = response.json()
-                        print(f"[DEBUG] ✓ SUCESSO! Endpoint funcionou: {url}")
-                        return result
-                    except:
-                        print(f"[DEBUG] ✗ Resposta não é JSON válido")
-                        continue
-                else:
-                    print(f"[DEBUG] ✗ Status {response.status_code}, tentando próximo endpoint...")
+            print(f"[DEBUG] Status Code: {response.status_code}")
+            print(f"[DEBUG] Response: {response.text[:1000]}")
+            
+            if response.status_code == 200:
+                try:
+                    result = response.json()
+                    print(f"[DEBUG] ✓ Conexão bem-sucedida!")
+                    print(f"[DEBUG] Response JSON: {result}")
                     
-            except requests.exceptions.RequestException as e:
-                print(f"[DEBUG] ✗ Exceção RequestException: {type(e).__name__}")
-                print(f"[DEBUG] Mensagem: {str(e)}")
-                if hasattr(e, 'response') and e.response is not None:
-                    print(f"[DEBUG] Resposta de erro: {e.response.text[:500]}")
-                continue
-            except Exception as e:
-                print(f"[DEBUG] ✗ Erro inesperado: {type(e).__name__}: {str(e)}")
-                continue
-        
-        print(f"\n[DEBUG] ========================================")
-        print(f"[DEBUG] ✗ FALHA TOTAL: Nenhum endpoint funcionou!")
-        print(f"[DEBUG] URL Base: {self.base_url}")
-        print(f"[DEBUG] Nome da instância: {instance_name}")
-        print(f"[DEBUG] Headers enviados: {self.headers}")
-        print(f"[DEBUG] ========================================\n")
-        
-        # Se nenhum endpoint funcionou
-        return {'error': 'Nenhum endpoint para gerar QR Code funcionou. Verifique os logs acima para detalhes.'}
+                    # Estrutura esperada:
+                    # {"instance": {"instanceName": "...", "state": "open/connecting/..."}}
+                    
+                    return result
+                except Exception as parse_error:
+                    print(f"[DEBUG] Erro ao fazer parse do JSON: {str(parse_error)}")
+                    return {'error': f'Resposta inválida da API: {response.text}'}
+            
+            elif response.status_code == 404:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('response', {}).get('message', [error_data.get('error', 'Não encontrado')])
+                    if isinstance(error_msg, list):
+                        error_msg = ' - '.join(error_msg)
+                except:
+                    error_msg = 'Instância não encontrada'
+                
+                return {'error': f'Instância não existe na API: {error_msg}'}
+            
+            else:
+                print(f"[DEBUG] ✗ Status inesperado: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('error', 'Erro desconhecido')
+                except:
+                    error_msg = response.text[:200]
+                
+                return {'error': f'Erro ao conectar instância (Status {response.status_code}): {error_msg}'}
+                    
+        except requests.exceptions.Timeout:
+            print(f"[DEBUG] ✗ Timeout na requisição")
+            return {'error': 'Timeout ao conectar instância (requisição demorou muito)'}
+        except requests.exceptions.RequestException as e:
+            print(f"[DEBUG] ✗ Erro na requisição: {str(e)}")
+            return {'error': f'Erro de conexão: {str(e)}'}
+        except Exception as e:
+            print(f"[DEBUG] ✗ Erro inesperado: {str(e)}")
+            return {'error': f'Erro inesperado: {str(e)}'}
     
     def restart_instance(self, instance_name: str) -> Dict:
         """
