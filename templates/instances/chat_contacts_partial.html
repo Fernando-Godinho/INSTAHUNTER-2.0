@@ -1,18 +1,32 @@
 {% for contact in contacts %}
-    <div class="contact-item d-flex align-items-center gap-3" 
-         hx-get="{% url 'instances:chat_messages' contact.id %}" 
-         hx-target="#chat-content"
+    <div class="contact-item d-flex align-items-center gap-2 p-2" 
+         id="contact-{{ contact.id }}"
          onclick="setActiveContact(this)">
-        <div class="contact-avatar">
-            {{ contact.name|slice:":1"|upper }}
-        </div>
-        <div class="flex-grow-1 overflow-hidden">
-            <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 text-truncate">{{ contact.name }}</h6>
-                <small class="text-muted" style="font-size: 0.7rem;">{{ contact.last_message_at|date:"H:i" }}</small>
+        
+        <!-- Área de Clique para abrir chat -->
+        <div class="d-flex align-items-center gap-3 flex-grow-1 cursor-pointer"
+             hx-get="{% url 'instances:chat_messages' contact.id %}" 
+             hx-target="#chat-content">
+            <div class="contact-avatar">
+                {{ contact.name|slice:":1"|upper }}
             </div>
-            <small class="text-muted text-truncate d-block">{{ contact.number }}</small>
+            <div class="flex-grow-1 overflow-hidden">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-truncate">{{ contact.name }}</h6>
+                    <small class="text-muted" style="font-size: 0.7rem;">{{ contact.last_message_at|date:"H:i" }}</small>
+                </div>
+                <small class="text-muted text-truncate d-block">{{ contact.number }}</small>
+            </div>
         </div>
+
+        <!-- Botão de Deletar -->
+        <button class="btn btn-link text-danger p-1 opacity-0-hover group-hover-visible"
+                hx-delete="{% url 'instances:chat_delete_contact' contact.id %}"
+                hx-confirm="Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita."
+                hx-target="#contact-list"
+                onclick="event.stopPropagation()">
+            <i class="bi bi-trash"></i>
+        </button>
     </div>
 {% empty %}
     <div class="text-center py-5">

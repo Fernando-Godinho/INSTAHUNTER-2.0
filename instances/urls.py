@@ -37,5 +37,6 @@ urlpatterns = [
     path('chat/messages/<int:contact_id>/', views_chat.chat_messages, name='chat_messages'),
     path('chat/messages-only/<int:contact_id>/', views_chat.chat_messages_only, name='chat_messages_only'),
     path('chat/send/<int:contact_id>/', views_chat.chat_send_message, name='chat_send_message'),
+    path('chat/delete/<int:contact_id>/', views_chat.chat_delete_contact, name='chat_delete_contact'),
     path('webhook/waba/', views_chat.webhook_waba, name='webhook_waba'),
 ]

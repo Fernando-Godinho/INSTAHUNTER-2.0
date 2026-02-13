@@ -89,7 +89,7 @@ body {
     font-size: 1.2rem;
 }
 
-.nav-link-custom:hover, 
+.nav-link-custom:hover,
 .nav-link-custom.active {
     background: rgba(255, 255, 255, 0.1);
     color: white;
@@ -202,15 +202,15 @@ body {
     .sidebar {
         transform: translateX(-100%);
     }
-    
+
     .sidebar.show {
         transform: translateX(0);
     }
-    
+
     .main-wrapper {
         margin-left: 0;
     }
-    
+
     .top-bar-mobile {
         display: flex;
         justify-content: space-between;
@@ -230,7 +230,8 @@ body {
     border-radius: 12px;
 }
 
-.table-modern td, .table-modern th {
+.table-modern td,
+.table-modern th {
     padding: 1rem;
     background: white;
 }
@@ -242,8 +243,15 @@ body {
     border: none;
 }
 
-.table-modern td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-.table-modern td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+.table-modern td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.table-modern td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
 
 /* QR Code */
 .qrcode-wrapper {
@@ -262,3 +270,27 @@ body {
     border-radius: 12px;
 }
 
+
+/* Chat Deletion UI */
+.contact-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.contact-item:hover {
+    background: rgba(79, 70, 229, 0.05);
+}
+
+.group-hover-visible {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.contact-item:hover .group-hover-visible {
+    opacity: 1;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}

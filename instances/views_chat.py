@@ -41,7 +41,9 @@ def webhook_waba(request):
             # Aceitamos 'direction' no topo ou dentro de 'body'
             direction = data.get('direction') or body_data.get('direction')
             if direction == 'OUT':
-                wa_id = (data.get('contact_number') or body_data.get('contact_number') or "").replace('+', '').strip()
+                wa_id_raw = (data.get('contact_number') or body_data.get('contact_number') or "")
+                # Limpar wa_id: manter apenas números
+                wa_id = "".join(filter(str.isdigit, wa_id_raw))
                 text_content = data.get('text') or body_data.get('text') or ""
                 
                 if wa_id:
@@ -84,7 +86,7 @@ def webhook_waba(request):
                 changes = entry.get('changes', [])
                 for change in changes:
                     value = change.get('value', {})
-                    messages = value.get('messages', [])
+                    messages = value.get('messages', {})
                     contacts_payload = value.get('contacts', [])
                     
                     if not messages:
@@ -99,7 +101,9 @@ def webhook_waba(request):
 
                     # Processar mensagens
                     for msg in messages:
-                        wa_id = msg.get('from')
+                        wa_id_raw = msg.get('from')
+                        # Limpar wa_id: manter apenas números
+                        wa_id = "".join(filter(str.isdigit, wa_id_raw))
                         wamid = msg.get('id')
                         timestamp = msg.get('timestamp')
                         msg_type = msg.get('type')
@@ -114,7 +118,7 @@ def webhook_waba(request):
                             print(f"[DEBUG] Instância auto-criada para INbound")
 
                         # Criar ou atualizar contato
-                        contact_name = contact_info.get(wa_id)
+                        contact_name = contact_info.get(msg.get('from'))
                         contact, created = Contact.objects.get_or_create(
                             instance=instance,
                             number=wa_id,
@@ -256,4 +260,21 @@ def chat_send_message(request, contact_id):
         else:
             return JsonResponse(res, status=500)
             
+    return HttpResponse(status=405)
+
+@csrf_exempt
+def chat_delete_contact(request, contact_id):
+    """
+    Exclui um contato e todas as suas mensagens
+    """
+    if request.method == 'DELETE':
+        contact = get_object_or_404(Contact, id=contact_id)
+        contact_name = contact.name
+        contact.delete()
+        print(f"[DEBUG] Contato deletado: {contact_name}")
+        # Retorna a lista de contatos atualizada
+        contacts = Contact.objects.all().order_by('-last_message_at')
+        return render(request, 'instances/chat_contacts_partial.html', {
+            'contacts': contacts
+        })
     return HttpResponse(status=405)
