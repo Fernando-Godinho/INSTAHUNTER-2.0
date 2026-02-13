@@ -111,6 +111,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EVOLUTION_API_URL = config('EVOLUTION_API_URL', default='https://rhino-evolution-api.ihkbl8.easypanel.host')
 EVOLUTION_API_KEY = config('EVOLUTION_API_KEY', default='429683C4C977415CAAFCCE10F7D57E11')
 
+# Facebook WABA Configuration
+FB_WABA_PHONE_NUMBER_ID = config('FB_WABA_PHONE_NUMBER_ID', default='1075584832294359')
+FB_WABA_ACCESS_TOKEN = config('FB_WABA_ACCESS_TOKEN', default='EAAM8ap6QllgBQd3qoKeDNu8S2ZBHmhzO6eG84nqJW6tNbI2y01bT9FqHoCZAQfshBZAqcPxo5HZAsJ72F2JWjGPZAdgL57Qcx5ZCzdWDBERqgKcfjZAfW4xGzU0y5tNBtvVtrYfEkfZB7BnhDoegTm6gapUXgqKpYoMyYizINHzEYCWtbdyBIHn05Wm3XJU25gZDZD')
+
 # CSRF Trusted Origins (needed for production)
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='').split(',')
 if CSRF_TRUSTED_ORIGINS == ['']:

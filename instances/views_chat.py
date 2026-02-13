@@ -226,14 +226,10 @@ def chat_send_message(request, contact_id):
         # Enviar via Evolution API (ou N8N como configurado no services.py)
         # Se send_to_n8n_webhook estiver ativo, usamos ele
         
-        # Preparar contatos no formato do n8n (o projeto parece estar usando n8n agora)
-        contatos = [{"Telefone": contact.number, "Mensagem": text}]
-        
-        # Tentar enviar
-        res = service.send_to_n8n_webhook(
-            instance_id=contact.instance.instance_id or "1",
-            instance_name=contact.instance.instance_name,
-            contatos=contatos
+        # Tentar enviar diretamente via Facebook Graph API
+        res = service.send_fb_message(
+            number=contact.number,
+            text=text
         )
         
         if 'error' not in res:

@@ -438,3 +438,75 @@ class EvolutionAPIService:
             if hasattr(e, 'response') and e.response is not None:
                 return {'error': f'{str(e)} - {e.response.text}'}
             return {'error': str(e)}
+
+    def send_fb_message(self, number: str, text: str) -> Dict:
+        """
+        Envia mensagem diretamente via Facebook Graph API (WhatsApp Business API)
+        """
+        phone_number_id = settings.FB_WABA_PHONE_NUMBER_ID
+        access_token = settings.FB_WABA_ACCESS_TOKEN
+        url = f"https://graph.facebook.com/v19.0/{phone_number_id}/messages"
+        
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": number,
+            "type": "text",
+            "text": {
+                "body": text
+            }
+        }
+        
+        try:
+            print(f"[DEBUG] Enviando mensagem direta via FB API: {number}")
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            
+            # Tentar parse do JSON mesmo se der erro para ver o detalhe da Meta
+            try:
+                result = response.json()
+            except ValueError:
+                result = {"error": response.text}
+                
+            response.raise_for_status()
+            print(f"[DEBUG] ✓ Mensagem FB enviada com sucesso!")
+            return result
+            
+        except requests.exceptions.RequestException as e:
+            error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                error_msg = f"{str(e)} - {e.response.text}"
+            print(f"[ERROR] Falha na FB API: {error_msg}")
+            return {"error": error_msg}
+
+    def send_chat_message_to_n8n(self, number: str, text: str) -> Dict:
+        """
+        Envia uma resposta manual do chat para o n8n
+        """
+        webhook_url = "https://n8n.sumconnectia.tech/webhook/chatReply"
+        
+        payload = {
+            "contact_number": number,
+            "text": text,
+            "direction": "OUT"
+        }
+        
+        try:
+            print(f"[DEBUG] Enviando resposta do chat para n8n: {webhook_url}")
+            response = requests.post(webhook_url, json=payload, timeout=30)
+            response.raise_for_status()
+            
+            try:
+                return response.json()
+            except ValueError:
+                # Se o n8n retornar apenas texto (ex: "OK")
+                return {"status": "success", "message": response.text}
+        except requests.exceptions.RequestException as e:
+            error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                error_msg = f'{str(e)} - {e.response.text}'
+            print(f"[ERROR] Falha ao enviar para n8n: {error_msg}")
+            return {'error': error_msg}
