@@ -15,15 +15,15 @@ services:
       EVOLUTION_API_KEY: "sua-chave-api-evolution"
       N8N_WEBHOOK_URL: "https://n8n.sumconnectia.tech/webhook/activeSender"
       PYTHONUNBUFFERED: "1"
-      
+
     working_dir: /workspace/instahunter
     ports:
-      - "2233:8000"
+      - "3354:3354"
     volumes:
       - app_media:/workspace/instahunter/media
       - app_static:/workspace/instahunter/staticfiles
       - db_data:/workspace/instahunter
-  
+
     command: >
       sh -c "
         apt-get update -qq &&
@@ -49,11 +49,11 @@ services:
         echo 'Coletando arquivos estáticos...' &&
         python manage.py collectstatic --noinput --clear &&
         echo 'Iniciando servidor...' &&
-        gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 instahunter.wsgi:application
+        gunicorn --bind 0.0.0.0:3354 --workers 4 --timeout 120 instahunter.wsgi:application
       "
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8000/']
+      test: [ 'CMD', 'curl', '-f', 'http://localhost:3354/' ]
       interval: 30s
       timeout: 10s
       retries: 3
