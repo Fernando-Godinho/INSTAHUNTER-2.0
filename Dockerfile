@@ -31,7 +31,7 @@ RUN pip install -q --upgrade pip setuptools wheel && \
 COPY . .
 
 # Criar diretórios necessários e ajustar permissões do entrypoint
-RUN mkdir -p /app/media /app/staticfiles /app/data && \
+RUN mkdir -p /app/media /app/staticfiles /app/data /app/static && \
     chmod +x /app/entrypoint.sh
 
 # Expor porta 3354
