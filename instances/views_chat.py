@@ -27,20 +27,34 @@ def webhook_waba(request):
     if request.method == 'POST':
         try:
             raw_data = request.body.decode('utf-8')
-            print(f"[DEBUG] Webhook Body: {raw_data[:500]}")
+            print(f"[DEBUG] Webhook Body: {raw_data[:1000]}") # Log mais longo
             data = json.loads(raw_data)
             
             # O JSON recebido pode ser uma lista (n8n às vezes envia assim)
             if isinstance(data, list):
                 data = data[0]
             
+            # Extrair corpo real se estiver encapsulado
+            body_data = data.get('body', data)
+            
             # 1. Verificar se é um log manual de OUT (vire n8n)
-            if data.get('direction') == 'OUT' and data.get('contact_number'):
-                wa_id = data.get('contact_number').replace('+', '').strip()
-                text_content = data.get('text', '')
+            # Aceitamos 'direction' no topo ou dentro de 'body'
+            direction = data.get('direction') or body_data.get('direction')
+            if direction == 'OUT':
+                wa_id = (data.get('contact_number') or body_data.get('contact_number') or "").replace('+', '').strip()
+                text_content = data.get('text') or body_data.get('text') or ""
                 
-                instance = Instance.objects.filter(status='connected').first() or Instance.objects.first()
-                if instance:
+                if wa_id:
+                    instance = Instance.objects.filter(status='connected').first() or Instance.objects.first()
+                    if not instance:
+                        # Criar instância padrão se não existir para não perder o log
+                        instance = Instance.objects.create(
+                            instance_name="Produção",
+                            instance_id="prod",
+                            status='connected'
+                        )
+                        print(f"[DEBUG] Instância auto-criada: {instance.instance_name}")
+
                     contact, _ = Contact.objects.get_or_create(
                         instance=instance,
                         number=wa_id,
@@ -61,11 +75,10 @@ def webhook_waba(request):
                     return JsonResponse({"status": "success"})
 
             # 2. Estrutura WABA Padrão
-            body_data = data.get('body', data)
             entries = body_data.get('entry', [])
             
             if not entries:
-                print("[DEBUG] Nenhum 'entry' encontrado no JSON")
+                print(f"[DEBUG] Aviso: Nenhum 'entry' encontrado. Keys: {list(body_data.keys())}")
             
             for entry in entries:
                 changes = entry.get('changes', [])
@@ -91,13 +104,14 @@ def webhook_waba(request):
                         timestamp = msg.get('timestamp')
                         msg_type = msg.get('type')
                         
-                        instance = Instance.objects.filter(status='connected').first()
+                        instance = Instance.objects.filter(status='connected').first() or Instance.objects.first()
                         if not instance:
-                            instance = Instance.objects.first()
-                            
-                        if not instance:
-                            print("[DEBUG] Erro: Nenhuma instância cadastrada no banco")
-                            continue
+                            instance = Instance.objects.create(
+                                instance_name="Produção",
+                                instance_id="prod",
+                                status='connected'
+                            )
+                            print(f"[DEBUG] Instância auto-criada para INbound")
 
                         # Criar ou atualizar contato
                         contact_name = contact_info.get(wa_id)
@@ -110,7 +124,7 @@ def webhook_waba(request):
                             contact.name = contact_name
                             contact.save()
                         
-                        print(f"[DEBUG] Contato: {contact.name} ({contact.number}) - Created: {created}")
+                        print(f"[DEBUG] Contato: {contact.name} ({contact.number})")
 
                         # Salvar mensagem se não existir
                         if not Message.objects.filter(wamid=wamid).exists():
@@ -145,9 +159,10 @@ def webhook_waba(request):
 
             return JsonResponse({"status": "success"})
         except Exception as e:
-            print(f"[DEBUG] ERRO EXCEPTION: {str(e)}")
-            logger.exception(f"Erro ao processar webhook: {str(e)}")
-            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+            print(f"[DEBUG] ERRO CRÍTICO NO WEBHOOK: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     return HttpResponse(status=405)
 

@@ -3,7 +3,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "=https://ENDERECO-DO-NGROK-AQUI.ngrok-free.app/webhook/waba/",
+                "url": "=https://sumconnect-instahunter.ihkbl8.easypanel.host/webhook/waba/",
                 "sendBody": true,
                 "specifyBody": "json",
                 "jsonBody": "={{ $json }}",
@@ -21,7 +21,7 @@
         {
             "parameters": {
                 "method": "POST",
-                "url": "=https://ENDERECO-DO-NGROK-AQUI.ngrok-free.app/webhook/waba/",
+                "url": "=https://sumconnect-instahunter.ihkbl8.easypanel.host/webhook/waba/",
                 "sendBody": true,
                 "specifyBody": "json",
                 "jsonBody": "={\n  \"direction\": \"OUT\",\n  \"contact_number\": \"{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}\",\n  \"text\": \"{{ $node['mensagem token permenente'].json.text.body }}\"\n}",
