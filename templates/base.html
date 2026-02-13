@@ -9,90 +9,121 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'instances:index' %}">
-                <i class="bi bi-send-fill"></i> InstaHunter 2.0
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <h1 class="sidebar-brand">InstaHunter 2.0</h1>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="{% url 'instances:index' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+                <i class="bi bi-grid-1x2"></i> Dashboard
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'instances:index' %}">
-                            <i class="bi bi-house"></i> Início
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'instances:instance_list' %}">
-                            <i class="bi bi-list-ul"></i> Instâncias
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'instances:instance_create' %}">
-                            <i class="bi bi-plus-circle"></i> Nova Instância
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-chat-dots"></i> Mensagens
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'instances:message_send' %}">
-                                <i class="bi bi-send"></i> Enviar Mensagem
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'instances:campaign_history' %}">
-                                <i class="bi bi-megaphone"></i> Histórico de Campanhas
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'instances:message_history' %}">
-                                <i class="bi bi-clock-history"></i> Histórico de Mensagens
-                            </a></li>
-                        </ul>
-                    </li>
-                </ul>
+            
+            <a href="{% url 'instances:instance_list' %}" class="nav-link-custom {% if 'instance' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-layers"></i> Instâncias
+            </a>
+            
+            <a href="{% url 'instances:message_send' %}" class="nav-link-custom {% if 'message_send' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-send-plus"></i> Enviar Mensagem
+            </a>
+
+            <a href="{% url 'instances:chat' %}" class="nav-link-custom {% if 'chat' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-chat-dots"></i> Chat WhatsApp
+            </a>
+
+            <div class="mt-4 mb-2 px-3">
+                <small class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">Relatórios</small>
+            </div>
+            
+            <a href="{% url 'instances:campaign_history' %}" class="nav-link-custom {% if 'campaign' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-megaphone"></i> Campanhas
+            </a>
+            
+            <a href="{% url 'instances:message_history' %}" class="nav-link-custom {% if 'message_history' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-clock-history"></i> Histórico
+            </a>
+        </nav>
+
+        <div class="sidebar-footer p-3">
+            <div class="glass-card p-3" style="background: rgba(255,255,255,0.05); border-radius: 12px;">
+                <p class="small mb-0 text-muted">Versão 2.4.0</p>
+                <p class="small mb-0 text-white-50">Enterprise Edition</p>
             </div>
         </div>
-    </nav>
+    </aside>
 
-    <!-- Messages -->
-    {% if messages %}
-        <div class="container mt-3">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
+    <div class="main-wrapper">
+        <!-- Mobile Top Bar -->
+        <header class="top-bar-mobile">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-lightning-charge-fill text-primary-light"></i>
+                <span class="fw-bold">InstaHunter 2.0</span>
+            </div>
+            <button class="btn text-white" type="button" onclick="toggleSidebar()">
+                <i class="bi bi-list fs-3"></i>
+            </button>
+        </header>
+
+        <!-- Messages -->
+        <div class="content-container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show glass-card border-0 mb-4" role="alert" style="border-left: 5px solid {% if message.tags == 'success' %}var(--success){% elif message.tags == 'danger' %}var(--danger){% else %}var(--primary){% endif %} !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if message.tags == 'success' %}
+                                <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+                            {% elif message.tags == 'danger' %}
+                                <i class="bi bi-x-circle-fill fs-5 text-danger"></i>
+                            {% else %}
+                                <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+                            {% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Main Content -->
+            <main>
+                {% block content %}{% endblock %}
+            </main>
         </div>
-    {% endif %}
 
-    <!-- Content -->
-    <main class="container mt-4">
-        {% block content %}{% endblock %}
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3 mt-5">
-        <div class="container">
-            <p class="mb-0">InstaHunter 2.0 - Disparador de Mensagens Evolution API &copy; 2025</p>
-        </div>
-    </footer>
+        <!-- Footer (Optional in this new layout, but keeping for copyright) -->
+        <footer class="mt-auto py-4 text-center text-muted">
+            <small>&copy; 2025 InstaHunter 2.0. Desenvolvido com <i class="bi bi-heart-fill text-danger"></i></small>
+        </footer>
+    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
-    <script src="{% static 'js/main.js' %}"></script>
     
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        // Auto-close sidebar on mobile when clicking a link
+        document.querySelectorAll('.nav-link-custom').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 992) {
+                    document.getElementById('sidebar').classList.remove('show');
+                }
+            });
+        });
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+

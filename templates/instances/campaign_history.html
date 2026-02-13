@@ -4,159 +4,144 @@
 {% block title %}Histórico de Campanhas - InstaHunter 2.0{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-megaphone"></i> Histórico de Campanhas
-            </h2>
-            <div>
-                <a href="{% url 'instances:message_send' %}" class="btn btn-primary">
-                    <i class="bi bi-send"></i> Nova Campanha
-                </a>
-            </div>
-        </div>
+<div class="row align-items-center mb-5">
+    <div class="col-md-7">
+        <h2 class="fw-bold mb-1">Histórico de Campanhas</h2>
+        <p class="text-muted">Acompanhe o desempenho e o status dos seus disparos em massa.</p>
+    </div>
+    <div class="col-md-5 text-md-end">
+        <a href="{% url 'instances:message_send' %}" class="btn btn-primary-custom text-white fw-bold px-4">
+            <i class="bi bi-megaphone me-2"></i> Nova Campanha
+        </a>
     </div>
 </div>
 
 <!-- Filtros -->
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <form method="get" class="row g-3">
-                    <div class="col-md-5">
-                        <label class="form-label">Instância</label>
-                        <select name="instance" class="form-select">
-                            <option value="">Todas</option>
-                            {% for inst in instances %}
-                                <option value="{{ inst.id }}" {% if selected_instance == inst.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ inst.instance_name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-select">
-                            <option value="">Todos</option>
-                            <option value="pending" {% if selected_status == "pending" %}selected{% endif %}>Pendente</option>
-                            <option value="sending" {% if selected_status == "sending" %}selected{% endif %}>Enviando</option>
-                            <option value="completed" {% if selected_status == "completed" %}selected{% endif %}>Concluída</option>
-                            <option value="error" {% if selected_status == "error" %}selected{% endif %}>Erro</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">&nbsp;</label>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-filter"></i> Filtrar
-                        </button>
-                    </div>
-                </form>
-            </div>
+<div class="glass-card p-4 mb-5">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase">Instância</label>
+            <select name="instance" class="form-select rounded-3">
+                <option value="">Todas as Instâncias</option>
+                {% for inst in instances %}
+                    <option value="{{ inst.id }}" {% if selected_instance == inst.id|stringformat:"s" %}selected{% endif %}>
+                        {{ inst.instance_name }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
-    </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-bold text-muted text-uppercase">Status da Campanha</label>
+            <select name="status" class="form-select rounded-3">
+                <option value="">Todos os Status</option>
+                <option value="pending" {% if selected_status == "pending" %}selected{% endif %}>Pendente</option>
+                <option value="sending" {% if selected_status == "sending" %}selected{% endif %}>Enviando...</option>
+                <option value="completed" {% if selected_status == "completed" %}selected{% endif %}>Concluída</option>
+                <option value="error" {% if selected_status == "error" %}selected{% endif %}>Erro/Cancelada</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-dark w-100 rounded-3 py-2 fw-bold">
+                <i class="bi bi-funnel-fill me-2"></i> Filtrar
+            </button>
+        </div>
+    </form>
 </div>
 
-<!-- Lista de Campanhas -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                {% if campaigns %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Instância</th>
-                                    <th>Tipo</th>
-                                    <th>Total</th>
-                                    <th>Sucesso</th>
-                                    <th>Erros</th>
-                                    <th>Taxa</th>
-                                    <th>Modo</th>
-                                    <th>Tempo</th>
-                                    <th>Status</th>
-                                    <th>Data</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for campaign in campaigns %}
-                                    <tr>
-                                        <td><strong>#{{ campaign.id }}</strong></td>
-                                        <td>
-                                            <span class="badge bg-secondary">
-                                                {{ campaign.instance.instance_name }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {% if campaign.message_type == 'text' %}
-                                                <i class="bi bi-chat-text"></i> Texto
-                                            {% elif campaign.message_type == 'image' %}
-                                                <i class="bi bi-image"></i> Imagem
-                                            {% elif campaign.message_type == 'video' %}
-                                                <i class="bi bi-film"></i> Vídeo
-                                            {% elif campaign.message_type == 'audio' %}
-                                                <i class="bi bi-music-note"></i> Áudio
-                                            {% elif campaign.message_type == 'document' %}
-                                                <i class="bi bi-file-earmark"></i> Documento
-                                            {% elif campaign.message_type == 'sticker' %}
-                                                <i class="bi bi-emoji-smile"></i> Sticker
-                                            {% endif %}
-                                        </td>
-                                        <td><strong>{{ campaign.total_recipients }}</strong></td>
-                                        <td><span class="text-success">{{ campaign.success_count }}</span></td>
-                                        <td><span class="text-danger">{{ campaign.error_count }}</span></td>
-                                        <td>
-                                            {% widthratio campaign.success_count campaign.total_recipients 100 as success_rate %}
-                                            <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ success_rate|default:0 }}%;" aria-valuenow="{{ success_rate|default:0 }}" aria-valuemin="0" aria-valuemax="100">
-                                                    {{ success_rate|default:0 }}%
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {% if campaign.distribuicao_modo == 'imediato' %}
-                                                <span class="badge bg-primary">Imediato</span>
-                                            {% elif campaign.distribuicao_modo == 'ate_horario' %}
-                                                <span class="badge bg-info">Até Horário</span>
-                                            {% elif campaign.distribuicao_modo == 'tempo_total' %}
-                                                <span class="badge bg-warning">Tempo Total</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ campaign.tempo_estimado|default:"-" }}</td>
-                                        <td>
-                                            {% if campaign.status == 'pending' %}
-                                                <span class="badge bg-secondary">Pendente</span>
-                                            {% elif campaign.status == 'sending' %}
-                                                <span class="badge bg-warning">Enviando</span>
-                                            {% elif campaign.status == 'completed' %}
-                                                <span class="badge bg-success">Concluída</span>
-                                            {% elif campaign.status == 'error' %}
-                                                <span class="badge bg-danger">{% if campaign.cancelled %}Cancelada{% else %}Erro{% endif %}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ campaign.created_at|date:"d/m/Y H:i" }}</td>
-                                        <td>
-                                            <a href="{% url 'instances:campaign_detail' campaign.id %}" class="btn btn-sm btn-info" title="Ver Detalhes">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        Nenhuma campanha encontrada.
-                    </div>
-                {% endif %}
+<div class="glass-card p-0 overflow-hidden">
+    <div class="table-responsive">
+        {% if campaigns %}
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="px-4 py-3 border-0">Campanha</th>
+                        <th class="py-3 border-0">Instância</th>
+                        <th class="py-3 border-0">Progresso</th>
+                        <th class="py-3 border-0">Métricas</th>
+                        <th class="py-3 border-0">Modo</th>
+                        <th class="py-3 border-0 text-center">Status</th>
+                        <th class="py-3 border-0 text-end px-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for campaign in campaigns %}
+                    <tr>
+                        <td class="px-4 border-0">
+                            <div class="fw-bold">#{{ campaign.id }}</div>
+                            <small class="text-muted">{{ campaign.created_at|date:"d/m/Y H:i" }}</small>
+                            <div class="mt-1">
+                                {% if campaign.message_type == 'text' %}
+                                    <span class="badge bg-light text-dark border-0"><i class="bi bi-chat-text me-1"></i> Texto</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border-0"><i class="bi bi-file-earmark-text me-1"></i> Mídia</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="border-0">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border-0 px-3 py-2">{{ campaign.instance.instance_name }}</span>
+                        </td>
+                        <td class="border-0" style="min-width: 150px;">
+                            {% widthratio campaign.success_count campaign.total_recipients 100 as success_rate %}
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <small class="fw-bold text-primary">{{ success_rate|default:0 }}%</small>
+                                <div class="progress flex-grow-1" style="height: 6px; background: rgba(0,0,0,0.05);">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ success_rate|default:0 }}%;"></div>
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ campaign.success_count }}/{{ campaign.total_recipients }} enviadas</small>
+                        </td>
+                        <td class="border-0">
+                            <div class="d-flex gap-3">
+                                <div class="text-center">
+                                    <div class="small text-muted">Erros</div>
+                                    <div class="fw-bold text-danger">{{ campaign.error_count }}</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="small text-muted">Tempo</div>
+                                    <div class="fw-bold">{{ campaign.tempo_estimado|default:"-" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="border-0">
+                            {% if campaign.distribuicao_modo == 'imediato' %}
+                                <span class="small text-muted"><i class="bi bi-lightning-fill text-warning"></i> Imediato</span>
+                            {% elif campaign.distribuicao_modo == 'ate_horario' %}
+                                <span class="small text-muted"><i class="bi bi-clock-fill"></i> Escalonado</span>
+                            {% else %}
+                                <span class="small text-muted"><i class="bi bi-hourglass-split"></i> Tempo Fixo</span>
+                            {% endif %}
+                        </td>
+                        <td class="border-0 text-center">
+                            {% if campaign.status == 'pending' %}
+                                <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary px-3">Pendente</span>
+                            {% elif campaign.status == 'sending' %}
+                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning px-3 border-0">
+                                    <span class="spinner-grow spinner-grow-sm me-1" role="status"></span> Enviando
+                                </span>
+                            {% elif campaign.status == 'completed' %}
+                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3">Concluída</span>
+                            {% elif campaign.status == 'error' %}
+                                <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger px-3">{% if campaign.cancelled %}Cancelada{% else %}Erro{% endif %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="border-0 text-end px-4">
+                            <a href="{% url 'instances:campaign_detail' campaign.id %}" class="btn btn-light btn-sm rounded-3">
+                                <i class="bi bi-eye-fill text-primary"></i> Detalhes
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-megaphone text-muted opacity-25" style="font-size: 5rem;"></i>
+                </div>
+                <h4 class="text-muted">Nenhuma campanha</h4>
+                <p class="text-muted mb-4">Inicie um disparo em massa para ver os relatórios aqui.</p>
             </div>
-        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -164,10 +149,9 @@
     {% for campaign in campaigns %}
         {% if campaign.status == 'sending' and not campaign.cancelled %}
             <script>
-                // Auto-refresh enquanto houver campanhas enviando
                 setTimeout(function() {
                     location.reload();
-                }, 3000);
+                }, 5000);
             </script>
         {% endif %}
     {% endfor %}

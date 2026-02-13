@@ -4,173 +4,167 @@
 {% block title %}{{ title }} - InstaHunter 2.0{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">
-                    <i class="bi bi-plus-circle"></i> {{ title }}
-                </h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <!-- Informações Básicas -->
-                    <h5 class="border-bottom pb-2 mb-3">
-                        <i class="bi bi-info-circle"></i> Informações Básicas
-                    </h5>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.instance_name.id_for_label }}" class="form-label">
-                                Nome da Instância *
-                            </label>
-                            {{ form.instance_name }}
-                            {% if form.instance_name.errors %}
-                                <div class="text-danger">
-                                    {{ form.instance_name.errors }}
-                                </div>
-                            {% endif %}
-                        </div>
+<div class="row align-items-center mb-5">
+    <div class="col-md-8">
+        <h2 class="fw-bold mb-1">{{ title }}</h2>
+        <p class="text-muted">Configure as credenciais e o comportamento da sua nova instância de WhatsApp.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{% url 'instances:instance_list' %}" class="btn btn-light px-4 fw-bold">
+            <i class="bi bi-arrow-left me-2"></i> Cancelar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-10">
+        <form method="post" id="instanceForm">
+            {% csrf_token %}
+            
+            <div class="row g-4">
+                <!-- Main Settings -->
+                <div class="col-lg-7">
+                    <div class="glass-card p-4 mb-4">
+                        <h5 class="card-title-custom mb-4">
+                            <i class="bi bi-info-circle text-primary"></i> Identificação
+                        </h5>
                         
-                        <div class="col-md-6">
-                            <label for="{{ form.number.id_for_label }}" class="form-label">
-                                Número WhatsApp (opcional)
-                            </label>
-                            {{ form.number }}
-                            <small class="form-text text-muted">Com código do país (ex: 5511999999999)</small>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-12">
+                                <label class="form-label">Nome da Instância *</label>
+                                {{ form.instance_name }}
+                                {% if form.instance_name.errors %}
+                                    <div class="text-danger small mt-1">{{ form.instance_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Número WhatsApp</label>
+                                {{ form.number }}
+                                <div class="form-text small opacity-75">Opcional. Ex: 5511999999999</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Integração</label>
+                                {{ form.integration_type }}
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.integration_type.id_for_label }}" class="form-label">
-                                Tipo de Integração
-                            </label>
-                            {{ form.integration_type }}
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-check mt-4">
+
+                        <div class="p-3 border rounded-4 bg-light">
+                            <div class="form-check form-switch mb-0">
                                 {{ form.qrcode }}
-                                <label class="form-check-label" for="{{ form.qrcode.id_for_label }}">
-                                    Gerar QR Code para conexão
+                                <label class="form-check-label fw-bold" for="{{ form.qrcode.id_for_label }}">
+                                    Gerar QR Code automaticamente
                                 </label>
+                                <div class="small text-muted">Inicia o processo de conexão logo após salvar.</div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Configurações -->
-                    <h5 class="border-bottom pb-2 mb-3 mt-4">
-                        <i class="bi bi-gear"></i> Configurações
-                    </h5>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                {{ form.reject_call }}
-                                <label class="form-check-label" for="{{ form.reject_call.id_for_label }}">
-                                    Rejeitar chamadas automaticamente
-                                </label>
-                            </div>
-                        </div>
+
+                    <div class="glass-card p-4">
+                        <h5 class="card-title-custom mb-4">
+                            <i class="bi bi-gear text-primary"></i> Comportamento & Automação
+                        </h5>
                         
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                {{ form.groups_ignore }}
-                                <label class="form-check-label" for="{{ form.groups_ignore.id_for_label }}">
-                                    Ignorar mensagens de grupos
-                                </label>
+                        <div class="row g-3">
+                            <div class="col-md-12 mb-2">
+                                <label class="form-label">Auto-Respostas</label>
+                                {{ form.msg_call }}
+                                <div class="form-text small opacity-75">Mensagem enviada automaticamente ao rejeitar chamadas.</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4 opacity-50">
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.reject_call }}
+                                    <label class="form-check-label" for="{{ form.reject_call.id_for_label }}">Rejeitar Chamadas</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.groups_ignore }}
+                                    <label class="form-check-label" for="{{ form.groups_ignore.id_for_label }}">Ignorar Grupos</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.always_online }}
+                                    <label class="form-check-label" for="{{ form.always_online.id_for_label }}">Sempre Online</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.read_messages }}
+                                    <label class="form-check-label" for="{{ form.read_messages.id_for_label }}">Marcar como Lidas</label>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                {{ form.always_online }}
-                                <label class="form-check-label" for="{{ form.always_online.id_for_label }}">
-                                    Sempre online
-                                </label>
-                            </div>
-                        </div>
+                </div>
+
+                <!-- Webhook & Submission -->
+                <div class="col-lg-5">
+                    <div class="glass-card p-4 mb-4">
+                        <h5 class="card-title-custom mb-4">
+                            <i class="bi bi-webhook text-primary"></i> Integração Webhook
+                        </h5>
                         
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                {{ form.read_messages }}
-                                <label class="form-check-label" for="{{ form.read_messages.id_for_label }}">
-                                    Marcar mensagens como lidas
-                                </label>
+                        <div class="mb-4">
+                            <label class="form-label">URL do Webhook (Endpoint)</label>
+                            {{ form.webhook_url }}
+                            <div class="form-text small opacity-75">Receba eventos da instância no seu servidor.</div>
+                        </div>
+
+                        <div class="d-grid gap-3">
+                            <div class="p-3 border rounded-4 bg-light">
+                                <div class="form-check form-switch mb-0">
+                                    {{ form.webhook_by_events }}
+                                    <label class="form-check-label" for="{{ form.webhook_by_events.id_for_label }}">Eventos Detalhados</label>
+                                </div>
+                            </div>
+                            <div class="p-3 border rounded-4 bg-light">
+                                <div class="form-check form-switch mb-0">
+                                    {{ form.webhook_base64 }}
+                                    <label class="form-check-label" for="{{ form.webhook_base64.id_for_label }}">Mídias em Base64</label>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                {{ form.read_status }}
-                                <label class="form-check-label" for="{{ form.read_status.id_for_label }}">
-                                    Marcar status como lidos
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.msg_call.id_for_label }}" class="form-label">
-                            Mensagem automática para chamadas
-                        </label>
-                        {{ form.msg_call }}
-                        <small class="form-text text-muted">
-                            Mensagem enviada quando rejeitar chamadas
-                        </small>
-                    </div>
-                    
-                    <!-- Webhook -->
-                    <h5 class="border-bottom pb-2 mb-3 mt-4">
-                        <i class="bi bi-webhook"></i> Webhook (Opcional)
-                    </h5>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.webhook_url.id_for_label }}" class="form-label">
-                            URL do Webhook
-                        </label>
-                        {{ form.webhook_url }}
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                {{ form.webhook_by_events }}
-                                <label class="form-check-label" for="{{ form.webhook_by_events.id_for_label }}">
-                                    Webhook por eventos
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                {{ form.webhook_base64 }}
-                                <label class="form-check-label" for="{{ form.webhook_base64.id_for_label }}">
-                                    Enviar mídias em Base64
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Botões -->
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'instances:instance_list' %}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Salvar Instância
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary-custom text-white py-3 fw-bold">
+                            <i class="bi bi-save-fill me-2"></i> Salvar e Configurar
                         </button>
                     </div>
-                </form>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger mt-4 rounded-4 border-0">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Consistent styling for existing Django forms
+    const styleFields = () => {
+        document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]), select, textarea').forEach(el => {
+            el.classList.add('form-control', 'rounded-3');
+            if (el.tagName === 'SELECT') el.classList.add('form-select');
+        });
+        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+            el.classList.add('form-check-input');
+        });
+    };
+    styleFields();
+});
+</script>
+{% endblock %}
+

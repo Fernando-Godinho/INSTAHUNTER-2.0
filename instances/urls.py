@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_chat
 
 app_name = 'instances'
 
@@ -30,4 +30,12 @@ urlpatterns = [
     path('campaigns/', views.campaign_history, name='campaign_history'),
     path('campaigns/<int:pk>/', views.campaign_detail, name='campaign_detail'),
     path('campaigns/<int:pk>/cancel/', views.campaign_cancel, name='campaign_cancel'),
+    
+    # Chat e Webhook
+    path('chat/', views_chat.chat_view, name='chat'),
+    path('chat/contacts/', views_chat.chat_contacts, name='chat_contacts'),
+    path('chat/messages/<int:contact_id>/', views_chat.chat_messages, name='chat_messages'),
+    path('chat/messages-only/<int:contact_id>/', views_chat.chat_messages_only, name='chat_messages_only'),
+    path('chat/send/<int:contact_id>/', views_chat.chat_send_message, name='chat_send_message'),
+    path('webhook/waba/', views_chat.webhook_waba, name='webhook_waba'),
 ]

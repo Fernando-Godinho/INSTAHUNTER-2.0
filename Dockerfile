@@ -1,3 +1,4 @@
+# Usar a imagem oficial do Python
 FROM python:3.13-slim
 
 # Definir variáveis de ambiente
@@ -16,35 +17,29 @@ RUN apt-get update -qq && \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Definir diretório de trabalho
-WORKDIR /workspace/instahunter
+# Definir diretório de trabalho (mais curto e padrão)
+WORKDIR /app
 
-# Copiar requirements
+# Copiar requirements primeiro para aproveitar o cache do Docker
 COPY requirements.txt .
 
 # Instalar dependências Python
 RUN pip install -q --upgrade pip setuptools wheel && \
-    pip install -q -r requirements.txt && \
-    pip install -q gunicorn whitenoise
+    pip install -q -r requirements.txt
 
-# Copiar código da aplicação
+# Copiar o restante do código da aplicação
 COPY . .
 
-# Criar diretórios necessários
-RUN mkdir -p /workspace/instahunter/media \
-    /workspace/instahunter/staticfiles \
-    /workspace/instahunter/data
+# Criar diretórios necessários e ajustar permissões do entrypoint
+RUN mkdir -p /app/media /app/staticfiles /app/data && \
+    chmod +x /app/entrypoint.sh
 
-# Executar migrações e collectstatic
-RUN python manage.py migrate --noinput && \
-    python manage.py collectstatic --noinput --clear
-
-# Expor porta
+# Expor porta 8000
 EXPOSE 8000
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
-# Comando de inicialização
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "sync", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "instahunter.wsgi:application"]
+# Usar o entrypoint para rodar migrações e collectstatic no boot
+ENTRYPOINT ["/app/entrypoint.sh"]

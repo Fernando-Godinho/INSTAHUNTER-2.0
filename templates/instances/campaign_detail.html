@@ -4,171 +4,175 @@
 {% block title %}Campanha #{{ campaign.id }} - InstaHunter 2.0{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-megaphone"></i> Campanha #{{ campaign.id }}
-            </h2>
-            <div>
-                {% if campaign.status == 'sending' %}
-                    <form method="post" action="{% url 'instances:campaign_cancel' campaign.pk %}" class="d-inline" onsubmit="return confirm('Tem certeza que deseja cancelar esta campanha?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-x-circle"></i> Cancelar Campanha
-                        </button>
-                    </form>
-                {% endif %}
-                <a href="{% url 'instances:campaign_history' %}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
-                </a>
-            </div>
+<div class="row align-items-center mb-5">
+    <div class="col-md-7">
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <a href="{% url 'instances:campaign_history' %}" class="btn btn-light btn-sm rounded-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="fw-bold mb-0">Campanha #{{ campaign.id }}</h2>
         </div>
+        <p class="text-muted ms-5">Relatório detalhado de execução e logs de disparo.</p>
+    </div>
+    <div class="col-md-5 text-md-end">
+        {% if campaign.status == 'sending' %}
+            <form method="post" action="{% url 'instances:campaign_cancel' campaign.pk %}" class="d-inline" onsubmit="return confirm('Tem certeza que deseja cancelar esta campanha?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger px-4 fw-bold rounded-3">
+                    <i class="bi bi-x-circle me-2"></i> Cancelar Campanha
+                </button>
+            </form>
+        {% endif %}
     </div>
 </div>
 
-<!-- Resumo da Campanha -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Resumo da Campanha</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Instância:</strong> {{ campaign.instance.instance_name }}</p>
-                        <p><strong>Tipo de Mensagem:</strong> {{ campaign.get_message_type_display }}</p>
-                        <p><strong>Modo de Distribuição:</strong> {{ campaign.get_distribuicao_modo_display }}</p>
-                        <p><strong>Tempo Estimado:</strong> {{ campaign.tempo_estimado|default:"-" }}</p>
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 h-100">
+            <h5 class="card-title-custom mb-4">
+                <i class="bi bi-info-circle text-primary"></i> Detalhes do Envio
+            </h5>
+            
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <label class="small text-muted text-uppercase fw-bold mb-1 d-block">Instância</label>
+                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold">
+                            {{ campaign.instance.instance_name }}
+                        </span>
                     </div>
-                    <div class="col-md-6">
-                        <p><strong>Total de Destinatários:</strong> {{ campaign.total_recipients }}</p>
-                        <p><strong>Enviadas com Sucesso:</strong> <span class="text-success">{{ campaign.success_count }}</span></p>
-                        <p><strong>Erros:</strong> <span class="text-danger">{{ campaign.error_count }}</span></p>
-                        <p><strong>Status:</strong> 
-                            {% if campaign.status == 'pending' %}
-                                <span class="badge bg-secondary">Pendente</span>
-                            {% elif campaign.status == 'sending' %}
-                                <span class="badge bg-warning">Enviando</span>
-                            {% elif campaign.status == 'completed' %}
-                                <span class="badge bg-success">Concluída</span>
-                            {% elif campaign.status == 'error' %}
-                                <span class="badge bg-danger">{% if campaign.cancelled %}Cancelada{% else %}Erro{% endif %}</span>
-                            {% endif %}
-                        </p>
-                        {% if campaign.cancelled %}
-                            <p class="text-warning"><i class="bi bi-exclamation-triangle"></i> <strong>Esta campanha foi cancelada</strong></p>
+                    <div class="mb-4">
+                        <label class="small text-muted text-uppercase fw-bold mb-1 d-block">Tipo de Mensagem</label>
+                        <span class="fw-bold">{{ campaign.get_message_type_display }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <label class="small text-muted text-uppercase fw-bold mb-1 d-block">Modo de Distribuição</label>
+                        <span class="fw-bold text-primary">{{ campaign.get_distribuicao_modo_display }}</span>
+                    </div>
+                    <div class="mb-4">
+                        <label class="small text-muted text-uppercase fw-bold mb-1 d-block">Tempo Estimado</label>
+                        <span class="fw-bold">{{ campaign.tempo_estimado|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if campaign.text_content or campaign.media_caption %}
+                <div class="p-3 bg-light rounded-4 border">
+                    <label class="small text-muted text-uppercase fw-bold mb-2 d-block">Conteúdo da Mensagem</label>
+                    <div class="small">
+                        {% if campaign.text_content %}
+                            {{ campaign.text_content|linebreaks }}
+                        {% endif %}
+                        {% if campaign.media_caption %}
+                            <div class="mt-2 pt-2 border-top">
+                                <span class="fw-bold text-muted small">Legenda:</span><br>
+                                {{ campaign.media_caption }}
+                            </div>
                         {% endif %}
                     </div>
                 </div>
-                
-                {% if campaign.text_content %}
-                    <hr>
-                    <p><strong>Mensagem:</strong></p>
-                    <div class="alert alert-secondary">{{ campaign.text_content }}</div>
-                {% endif %}
-                
-                {% if campaign.media_caption %}
-                    <hr>
-                    <p><strong>Legenda:</strong></p>
-                    <div class="alert alert-secondary">{{ campaign.media_caption }}</div>
-                {% endif %}
-                
-                <hr>
-                <div class="row text-center">
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 class="text-primary">{{ campaign.total_recipients }}</h3>
-                                <p class="mb-0">Total</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 class="text-success">{{ campaign.success_count }}</h3>
-                                <p class="mb-0">Sucesso</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 class="text-danger">{{ campaign.error_count }}</h3>
-                                <p class="mb-0">Erros</p>
-                            </div>
-                        </div>
-                    </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4">
+            <h5 class="card-title-custom mb-4">
+                <i class="bi bi-bar-chart text-primary"></i> Métricas em Tempo Real
+            </h5>
+            
+            <div class="stat-grid d-grid gap-3 mb-4">
+                <div class="p-3 border rounded-4 bg-light text-center">
+                    <div class="h3 fw-bold mb-0 text-dark">{{ campaign.total_recipients }}</div>
+                    <div class="small text-muted">Total</div>
                 </div>
+                <div class="p-3 border rounded-4 bg-success bg-opacity-10 border-success border-opacity-10 text-center">
+                    <div class="h3 fw-bold mb-0 text-success">{{ campaign.success_count }}</div>
+                    <div class="small text-muted">Sucesso</div>
+                </div>
+                <div class="p-3 border rounded-4 bg-danger bg-opacity-10 border-danger border-opacity-10 text-center">
+                    <div class="h3 fw-bold mb-0 text-danger">{{ campaign.error_count }}</div>
+                    <div class="small text-muted">Erros</div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                {% if campaign.status == 'pending' %}
+                    <span class="badge bg-secondary px-4 py-2 rounded-pill fs-6">Pendente</span>
+                {% elif campaign.status == 'sending' %}
+                    <span class="badge bg-warning px-4 py-2 rounded-pill fs-6 text-dark d-inline-flex align-items-center gap-2">
+                        <span class="spinner-grow spinner-grow-sm" role="status"></span> Enviando...
+                    </span>
+                {% elif campaign.status == 'completed' %}
+                    <span class="badge bg-success px-4 py-2 rounded-pill fs-6">Concluída ✅</span>
+                {% elif campaign.status == 'error' %}
+                    <span class="badge bg-danger px-4 py-2 rounded-pill fs-6">{% if campaign.cancelled %}Cancelada ⏹️{% else %}Erro ⚠️{% endif %}</span>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Lista de Mensagens da Campanha -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Mensagens Enviadas ({{ messages.count }})</h5>
+<div class="glass-card p-0 overflow-hidden">
+    <div class="p-4 border-bottom">
+        <h5 class="card-title-custom mb-0">
+            <i class="bi bi-list-task text-primary"></i> Logs de Execução
+        </h5>
+    </div>
+    <div class="table-responsive">
+        {% if messages %}
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="px-4 py-3 border-0">Destinatário</th>
+                        <th class="py-3 border-0">Data/Hora</th>
+                        <th class="py-3 border-0">Status</th>
+                        <th class="py-3 border-0 text-end px-4">Informação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for message in messages %}
+                    <tr>
+                        <td class="px-4 border-0 fw-bold">{{ message.recipient }}</td>
+                        <td class="border-0 text-muted small">
+                            {{ message.created_at|date:"d/m/Y" }}<br>
+                            {{ message.created_at|date:"H:i:s" }}
+                        </td>
+                        <td class="border-0">
+                            {% if message.status == 'sent' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border-0 px-3">Enviada</span>
+                            {% elif message.status == 'pending' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning border-0 px-3">Pendente</span>
+                            {% else %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border-0 px-3">Erro</span>
+                            {% endif %}
+                        </td>
+                        <td class="border-0 text-end px-4 small text-muted">
+                            {% if message.error_message %}
+                                <span class="text-danger" title="{{ message.error_message }}">{{ message.error_message|truncatewords:8 }}</span>
+                            {% else %}
+                                <i class="bi bi-dash"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted mb-0">Nenhum log disponível.</p>
             </div>
-            <div class="card-body">
-                {% if messages %}
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Destinatário</th>
-                                    <th>Status</th>
-                                    <th>Data</th>
-                                    <th>Erro</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for message in messages %}
-                                    <tr>
-                                        <td><strong>{{ message.recipient }}</strong></td>
-                                        <td>
-                                            {% if message.status == 'pending' %}
-                                                <span class="badge bg-secondary">Pendente</span>
-                                            {% elif message.status == 'sent' %}
-                                                <span class="badge bg-success">Enviada</span>
-                                            {% elif message.status == 'error' %}
-                                                <span class="badge bg-danger">Erro</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ message.created_at|date:"d/m/Y H:i:s" }}</td>
-                                        <td>
-                                            {% if message.error_message %}
-                                                <small class="text-danger">{{ message.error_message|truncatewords:10 }}</small>
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        Nenhuma mensagem encontrada.
-                    </div>
-                {% endif %}
-            </div>
-        </div>
+        {% endif %}
     </div>
 </div>
 
 {% if campaign.status == 'sending' and not campaign.cancelled %}
 <script>
-    // Auto-refresh a cada 3 segundos quando a campanha estiver em andamento
     setTimeout(function() {
         location.reload();
-    }, 3000);
+    }, 4000);
 </script>
 {% endif %}
 {% endblock %}

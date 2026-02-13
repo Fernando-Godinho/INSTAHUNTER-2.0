@@ -1,0 +1,1093 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://ENDERECO-DO-NGROK-AQUI.ngrok-free.app/webhook/waba/",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ $json }}",
+                "options": {}
+            },
+            "id": "log-inbound-instahunter",
+            "name": "Log Inbound - InstaHunter",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -1750,
+                1350
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://ENDERECO-DO-NGROK-AQUI.ngrok-free.app/webhook/waba/",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"direction\": \"OUT\",\n  \"contact_number\": \"{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}\",\n  \"text\": \"{{ $node['mensagem token permenente'].json.text.body }}\"\n}",
+                "options": {}
+            },
+            "id": "log-out-maria-1",
+            "name": "Log Maria - InstaHunter",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1050,
+                1408
+            ]
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                -432,
+                1520
+            ],
+            "id": "fa75e50a-e7ee-4c9e-87aa-ae3269f1e580",
+            "name": "Loop Over Items1"
+        },
+        {
+            "parameters": {
+                "operation": "select",
+                "table": {
+                    "__rl": true,
+                    "value": "mak_vendedores",
+                    "mode": "list",
+                    "cachedResultName": "mak_vendedores"
+                },
+                "returnAll": true,
+                "options": {}
+            },
+            "type": "n8n-nodes-base.mySql",
+            "typeVersion": 2.4,
+            "position": [
+                448,
+                1184
+            ],
+            "id": "692a6d81-42cf-4714-8c70-47136cea55bf",
+            "name": "Pega Ultimo vendedor1",
+            "credentials": {
+                "mySql": {
+                    "id": "Ub9rBEg0XhqvXIoI",
+                    "name": "MySQL account 3"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "0d8c5459-e810-4a25-a867-fcafc487bdf7",
+                            "leftValue": "={{ $json.contact_phone.split(\"+\")[1].trim() }}",
+                            "rightValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].from }}",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals",
+                                "name": "filter.operator.equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -112,
+                1632
+            ],
+            "id": "21d09e98-6aea-4dea-b591-d397bfc322fe",
+            "name": "Existe no funil?1"
+        },
+        {
+            "parameters": {
+                "jsCode": "const users = [\n  { id: \"694ac74cc285820017920d6e\", name: \"Daniel\", whats: \"5511937524617\" },\n  { id: \"694acff8816ebc001e9cab67\", name: \"Angelina\", whats: \"5511973161872\" },\n  { id: \"694ac712b1088c001efc2637\", name: \"Leticia\", whats: \"5511998043118\" },\n  { id: \"696e6b245794b00017d62610\", name: \"Mauricio\", whats: \"5511948679342\" },\n  { id: \"694ad004e7a7720013f0b5ee\", name: \"Luana\", whats: \"5511919311319\" }\n];\n\n// ID recebido no input\nconst idAtual = $input.first().json.nome;\n\n// Função de rodízio circular\nfunction getProximoUsuario(id) {\n  const indexAtual = users.findIndex(user => user.id === id);\n\n  // Se não encontrar o ID, começa do primeiro\n  if (indexAtual === -1) {\n    return users[0];\n  }\n\n  const proximoIndex = (indexAtual + 1) % users.length;\n  return users[proximoIndex];\n}\n\nconst proximoUsuario = getProximoUsuario(idAtual);\n\n// Retorno no formato do n8n\nreturn [\n  {\n    json: {\n      id: proximoUsuario.id,\n      nome: proximoUsuario.name,\n      whats: proximoUsuario.whats\n    }\n  }\n];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                672,
+                1184
+            ],
+            "id": "f54856e1-c3b6-49af-98e7-a8dfbe6b6b31",
+            "name": "Encontra o próximo1"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE mak_vendedores\nSET nome = '{{ $json.id }}'\nWHERE id = 1;\n",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.mySql",
+            "typeVersion": 2.4,
+            "position": [
+                880,
+                1184
+            ],
+            "id": "1697290f-ddfb-4a91-9b4d-817130ea4f0e",
+            "name": "Atualiza com o novo Vendedor1",
+            "credentials": {
+                "mySql": {
+                    "id": "Ub9rBEg0XhqvXIoI",
+                    "name": "MySQL account 3"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "d4f3deed-0e26-4cc0-86aa-0ff42f3710f6",
+                            "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        },
+                        {
+                            "id": "f3cbaa76-b466-4289-a737-3a8be22dcb06",
+                            "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                            "rightValue": "3",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals",
+                                "name": "filter.operator.equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                544,
+                1408
+            ],
+            "id": "2ba95334-ad1e-4318-8faf-908c222cc486",
+            "name": "é cnc2"
+        },
+        {
+            "parameters": {
+                "url": "https://crm.rdstation.com/api/v1/deals",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "limit",
+                            "value": "200"
+                        },
+                        {
+                            "name": "start_date",
+                            "value": "={{ new Date().toISOString().split('T')[0] + 'T15:00:00' }}"
+                        },
+                        {
+                            "name": "end_date",
+                            "value": "={{ new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T15:00:00' }}\n\n"
+                        },
+                        {
+                            "name": "deal_pipeline_id",
+                            "value": "694176a2158f6d00149ca8a0"
+                        },
+                        {
+                            "name": "token",
+                            "value": "695d49fc5fb01600182421e1"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -1136,
+                1520
+            ],
+            "id": "5dcb93e3-586b-45fb-9b08-dad85f67214d",
+            "name": "Carrega negociações"
+        },
+        {
+            "parameters": {
+                "jsCode": "const item = $input.item.json;\nconst results = [];\n\nif (item.deals && Array.isArray(item.deals)) {\n  for (const deal of item.deals) {\n    if (deal.contacts && Array.isArray(deal.contacts)) {\n      for (const contact of deal.contacts) {\n        const phone = contact.phones?.[0]?.phone || null;\n\n        results.push({\n          json: {\n            deal_id: deal.id,\n            contact_name: contact.name,\n            contact_phone: phone\n          }\n        });\n      }\n    }\n  }\n}\n\nreturn results;\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -880,
+                1520
+            ],
+            "id": "bb1782c9-000f-406a-a28c-4911ae291008",
+            "name": "Separa número e IDs"
+        },
+        {
+            "parameters": {
+                "fieldToSplitOut": "deal_id, contact_name, contact_phone",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitOut",
+            "typeVersion": 1,
+            "position": [
+                -672,
+                1520
+            ],
+            "id": "a003a66e-c752-48eb-860c-47a849c16489",
+            "name": "Cria lista"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "d4f3deed-0e26-4cc0-86aa-0ff42f3710f6",
+                            "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        },
+                        {
+                            "id": "f3cbaa76-b466-4289-a737-3a8be22dcb06",
+                            "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                            "rightValue": "1",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals",
+                                "name": "filter.operator.equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                128,
+                1264
+            ],
+            "id": "b735f3a9-7f5f-4d04-af92-e8038d4e9a23",
+            "name": "é cnc"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "d4f3deed-0e26-4cc0-86aa-0ff42f3710f6",
+                            "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        },
+                        {
+                            "id": "f3cbaa76-b466-4289-a737-3a8be22dcb06",
+                            "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                            "rightValue": "2",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals",
+                                "name": "filter.operator.equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                288,
+                1360
+            ],
+            "id": "f8747fa5-abb6-4b6c-a226-2d12645e2780",
+            "name": "é cnc1"
+        },
+        {
+            "parameters": {
+                "fieldsToAggregate": {
+                    "fieldToAggregate": [
+                        {}
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.aggregate",
+            "typeVersion": 1,
+            "position": [
+                -112,
+                1264
+            ],
+            "id": "6117adeb-a778-4a22-b5c0-70ef130408ca",
+            "name": "Aggregate1"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "rhinoBOT",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -1984,
+                1520
+            ],
+            "id": "3ea12607-bda1-466a-a94f-756501e60cee",
+            "name": "Webhook1",
+            "webhookId": "28d82eea-0bb9-4db9-8204-1400ce835ab8"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v19.0/942971575572951/messages",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer EAAM8ap6QllgBQd3qoKeDNu8S2ZBHmhzO6eG84nqJW6tNbI2y01bT9FqHoCZAQfshBZAqcPxo5HZAsJ72F2JWjGPZAdgL57Qcx5ZCzdWDBERqgKcfjZAfW4xGzU0y5tNBtvVtrYfEkfZB7BnhDoegTm6gapUXgqKpYoMyYizINHzEYCWtbdyBIHn05Wm3XJU25gZDZD"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"Olá! Eu sou a *Maria*, da *MAK* ⚙️\\n\\nPara te ajudar de forma mais rápida e precisa, qual tipo de equipamento você está buscando?\\n\\n👉 *Responda apenas com o número:*\\n\\n1 Router CNC\\n2️ Máquina a Laser\\n3️ Outros\"\n  }\n}\n ",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                864,
+                1408
+            ],
+            "id": "1664feaf-be7e-403b-ad06-6e70c2da04d4",
+            "name": "mensagem token permenente"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                                        "rightValue": "1",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Facebook"
+                        },
+                        {
+                            "conditions": {
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                                        "rightValue": "2",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Instagram"
+                        },
+                        {
+                            "conditions": {
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                                        "rightValue": "3",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Site"
+                        },
+                        {
+                            "conditions": {
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                                        "rightValue": "4",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Google"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ed696e41-876d-498e-9113-4a420125e2c2",
+            "name": "Switch - Origem Lead",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                240,
+                1632
+            ]
+        },
+        {
+            "parameters": {
+                "method": "PUT",
+                "url": "=https://crm.rdstation.com/api/v1/deals/{{ $json.deal_id }}",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "token",
+                            "value": "695d49fc5fb01600182421e1"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{ \"deal_source\": { \"_id\": \"694176a2158f6d00149ca89c\" } }",
+                "options": {}
+            },
+            "id": "666c9f80-9733-4dd5-9767-a56329e4fddc",
+            "name": "Instagram / Facebook",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                896,
+                1600
+            ]
+        },
+        {
+            "parameters": {
+                "method": "PUT",
+                "url": "=https://crm.rdstation.com/api/v1/deals/{{ $json.deal_id }}",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "token",
+                            "value": "695d49fc5fb01600182421e1"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{ \"deal_source\": { \"_id\": \"694176a2158f6d00149ca895\" } }",
+                "options": {}
+            },
+            "id": "d5a0f391-d337-42dc-a631-ea65558024fd",
+            "name": "Contato pelo Site",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                896,
+                1792
+            ]
+        },
+        {
+            "parameters": {
+                "method": "PUT",
+                "url": "=https://crm.rdstation.com/api/v1/deals/{{ $json.deal_id }}",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "token",
+                            "value": "695d49fc5fb01600182421e1"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{ \"deal_source\": { \"_id\": \"694176a2158f6d00149ca89a\" } }",
+                "options": {}
+            },
+            "id": "12e8235e-a545-41cb-a307-f2379fb9271a",
+            "name": "Google e Outros Buscadores",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                896,
+                1968
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v19.0/942971575572951/messages",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer EAAM8ap6QllgBQd3qoKeDNu8S2ZBHmhzO6eG84nqJW6tNbI2y01bT9FqHoCZAQfshBZAqcPxo5HZAsJ72F2JWjGPZAdgL57Qcx5ZCzdWDBERqgKcfjZAfW4xGzU0y5tNBtvVtrYfEkfZB7BnhDoegTm6gapUXgqKpYoMyYizINHzEYCWtbdyBIHn05Wm3XJU25gZDZD"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"Por qual canal você chegou até a *MAK*? 😊\\n\\n👉 *Responda apenas com o número:*\\n\\n1️ Facebook\\n2️ Instagram\\n3️ Nosso site\\n4️ Google\"\n  }\n}\n",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                1536,
+                1184
+            ],
+            "id": "2c81fd97-ceb7-493b-b1b8-6bd6cbe6d19e",
+            "name": "msg -  canal de chegada"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v19.0/942971575572951/messages",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer EAAM8ap6QllgBQd3qoKeDNu8S2ZBHmhzO6eG84nqJW6tNbI2y01bT9FqHoCZAQfshBZAqcPxo5HZAsJ72F2JWjGPZAdgL57Qcx5ZCzdWDBERqgKcfjZAfW4xGzU0y5tNBtvVtrYfEkfZB7BnhDoegTm6gapUXgqKpYoMyYizINHzEYCWtbdyBIHn05Wm3XJU25gZDZD"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Encontra o próximo1').item.json.whats }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"🚨 *NOVO LEAD CADASTRADO PARA VOCÊ*\\n\\n📌 *Título:* {{ $('Cria negociação').item.json.name }}\\n🕒 *Criado em:* {{ $now.format('dd-MM-yyyy HH:mm') }}\\n\\n👉 *Clique para iniciar a conversa:*\\nhttps://wa.me/{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}\"\n  }\n}\n",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                1760,
+                1184
+            ],
+            "id": "c83b77e9-8cc3-4f92-83f7-8cab89942ffc",
+            "name": "msg - aviso vendedor"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://crm.rdstation.com/api/v1/deals",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "token",
+                            "value": "695d49fc5fb01600182421e1"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"deal\": {\n    \"name\": \"{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].profile.name }}\",\n    \"deal_stage_id\": \"694176a2158f6d00149ca8a2\",\n    \"user_id\": \"{{ $('Encontra o próximo1').item.json.id }}\"\n  },\n  \"contacts\": [\n    {\n      \"phones\": [\n        {\n          \"phone\": \"+{{ $('Webhook1').item.json.body.entry[0].changes[0].value.messages[0].from }}\",\n          \"type\": \"cellphone\"\n        }\n      ],\n      \"name\": \"{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].profile.name }}-{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}\"\n    }\n  ]\n} ",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1232,
+                1184
+            ],
+            "id": "f82e9221-cde7-446a-ad46-e94bce0d101e",
+            "name": "Cria negociação"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v19.0/942971575572951/messages",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer EAAM8ap6QllgBQd3qoKeDNu8S2ZBHmhzO6eG84nqJW6tNbI2y01bT9FqHoCZAQfshBZAqcPxo5HZAsJ72F2JWjGPZAdgL57Qcx5ZCzdWDBERqgKcfjZAfW4xGzU0y5tNBtvVtrYfEkfZB7BnhDoegTm6gapUXgqKpYoMyYizINHzEYCWtbdyBIHn05Wm3XJU25gZDZD"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"Obrigada pela resposta! 😊\\n\\nJá estamos com as informações por aqui e, em breve, um de nossos consultores entrará em contato para te ajudar da melhor forma possível.\\n\\nAté já!\"\n  }\n}\n",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                1296,
+                1808
+            ],
+            "id": "cf52fe94-ed1f-483e-adf7-5df0df5648b9",
+            "name": "msg -  canal de chegada1"
+        },
+        {
+            "parameters": {
+                "content": "## FLUXO MAK CNC\n",
+                "height": 1008,
+                "width": 3312,
+                "color": 5
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -1296,
+                1120
+            ],
+            "id": "c692ff91-f8e2-42a7-9a7a-997b8f0802c7",
+            "name": "Sticky Note1"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "28f492d3-edeb-4334-b934-deec7c6582c6",
+                            "leftValue": "={{ $json.body.entry[0].changes[0].value.messages[0].text.body }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "exists",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                -1536,
+                1504
+            ],
+            "id": "1605ecb3-a3d8-4056-8319-f419d82c83d7",
+            "name": "If"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v19.0/942971575572951/messages",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer EAAM8ap6QllgBQd3qoKeDNu8S2ZBHmhzO6eG84nqJW6tNbI2y01bT9FqHoCZAQfshBZAqcPxo5HZAsJ72F2JWjGPZAdgL57Qcx5ZCzdWDBERqgKcfjZAfW4xGzU0y5tNBtvVtrYfEkfZB7BnhDoegTm6gapUXgqKpYoMyYizINHzEYCWtbdyBIHn05Wm3XJU25gZDZD"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"5551983097389\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"Olá! Eu sou a *Maria*, da *MAK* ⚙️\\nPara te ajudar de forma mais rápida e precisa, qual tipo de equipamento você está buscando?\\n\\n👉 *Responda apenas com o número:*\\n\\n1 Router CNC\\n2️ Máquina a Laser\\n3️ Outros\"\n  }\n}\n ",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                1280,
+                1424
+            ],
+            "id": "4993b303-6cb6-4895-b832-41a80208b950",
+            "name": "mensagem token permenente3"
+        }
+    ],
+    "connections": {
+        "Webhook1": {
+            "main": [
+                [
+                    {
+                        "node": "If",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Log Inbound - InstaHunter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "mensagem token permenente": {
+            "main": [
+                [
+                    {
+                        "node": "Log Maria - InstaHunter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Items1": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Existe no funil?1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Pega Ultimo vendedor1": {
+            "main": [
+                [
+                    {
+                        "node": "Encontra o próximo1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Existe no funil?1": {
+            "main": [
+                [
+                    {
+                        "node": "Switch - Origem Lead",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Loop Over Items1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Encontra o próximo1": {
+            "main": [
+                [
+                    {
+                        "node": "Atualiza com o novo Vendedor1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Atualiza com o novo Vendedor1": {
+            "main": [
+                [
+                    {
+                        "node": "Cria negociação",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "é cnc2": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "mensagem token permenente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Carrega negociações": {
+            "main": [
+                [
+                    {
+                        "node": "Separa número e IDs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Separa número e IDs": {
+            "main": [
+                [
+                    {
+                        "node": "Cria lista",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Cria lista": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "é cnc": {
+            "main": [
+                [
+                    {
+                        "node": "Pega Ultimo vendedor1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "é cnc1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "é cnc1": {
+            "main": [
+                [
+                    {
+                        "node": "Pega Ultimo vendedor1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "é cnc2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate1": {
+            "main": [
+                [
+                    {
+                        "node": "é cnc",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch - Origem Lead": {
+            "main": [
+                [
+                    {
+                        "node": "Instagram / Facebook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Instagram / Facebook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Contato pelo Site",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Google e Outros Buscadores",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Instagram / Facebook": {
+            "main": [
+                [
+                    {
+                        "node": "msg -  canal de chegada1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Contato pelo Site": {
+            "main": [
+                [
+                    {
+                        "node": "msg -  canal de chegada1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google e Outros Buscadores": {
+            "main": [
+                [
+                    {
+                        "node": "msg -  canal de chegada1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "msg -  canal de chegada": {
+            "main": [
+                [
+                    {
+                        "node": "msg - aviso vendedor",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Cria negociação": {
+            "main": [
+                [
+                    {
+                        "node": "msg -  canal de chegada",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If": {
+            "main": [
+                [
+                    {
+                        "node": "Carrega negociações",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "a0f2c2d51b608041b56886c621bd19d9659348eb7c4182f230a856b95d4fb03b"
+    }
+}

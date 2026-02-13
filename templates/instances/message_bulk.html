@@ -3,131 +3,124 @@
 
 {% block title %}{{ title }} - InstaHunter 2.0{% endblock %}
 
-{% block extra_css %}
-<style>
-    .media-fields {
-        display: none;
-    }
-    .field-visibility-test {
-        border: 2px dashed #28a745;
-        padding: 10px;
-        margin: 10px 0;
-        background-color: #f0fff4;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">
-                    <i class="bi bi-send-fill"></i> {{ title }}
-                </h4>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i>
-                    <strong>Envio em Massa</strong><br>
-                    Envie a mesma mensagem (texto ou arquivo) para múltiplos destinatários. Adicione um número por linha.
-                </div>
-                
-                <form method="post" enctype="multipart/form-data" id="bulkMessageForm">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.instance.id_for_label }}" class="form-label">
-                            {{ form.instance.label }} *
-                        </label>
-                        {{ form.instance }}
-                        <small class="form-text text-muted">{{ form.instance.help_text }}</small>
-                        {% if form.instance.errors %}
-                            <div class="text-danger">{{ form.instance.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.recipients.id_for_label }}" class="form-label">
-                            {{ form.recipients.label }} *
-                        </label>
-                        {{ form.recipients }}
-                        <small class="form-text text-muted">{{ form.recipients.help_text }}</small>
-                        {% if form.recipients.errors %}
-                            <div class="text-danger">{{ form.recipients.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.message_type.id_for_label }}" class="form-label">
-                            {{ form.message_type.label }} *
-                        </label>
-                        {{ form.message_type }}
-                        {% if form.message_type.errors %}
-                            <div class="text-danger">{{ form.message_type.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3 text-fields">
-                        <label for="{{ form.text_content.id_for_label }}" class="form-label">
-                            {{ form.text_content.label }}
-                        </label>
-                        {{ form.text_content }}
-                        {% if form.text_content.errors %}
-                            <div class="text-danger">{{ form.text_content.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3 media-fields field-visibility-test">
-                        <label for="{{ form.media_file.id_for_label }}" class="form-label">
-                            <i class="bi bi-cloud-upload"></i> {{ form.media_file.label }}
-                        </label>
-                        {{ form.media_file }}
-                        <small class="form-text text-muted">{{ form.media_file.help_text }}</small>
-                        {% if form.media_file.errors %}
-                            <div class="text-danger">{{ form.media_file.errors }}</div>
-                        {% endif %}
+<div class="row align-items-center mb-5">
+    <div class="col-md-8">
+        <h2 class="fw-bold mb-1">{{ title }}</h2>
+        <p class="text-muted">Dispare a mesma mensagem ou arquivo para múltiplos números simultaneamente.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{% url 'instances:message_history' %}" class="btn btn-light px-4 fw-bold">
+            <i class="bi bi-clock-history me-2 text-primary"></i> Ver Histórico
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-10">
+        <form method="post" enctype="multipart/form-data" id="bulkMessageForm">
+            {% csrf_token %}
+            
+            <div class="row g-4">
+                <!-- Main Form Column -->
+                <div class="col-lg-7">
+                    <div class="glass-card p-4 h-100">
+                        <h5 class="card-title-custom mb-4">
+                            <i class="bi bi-layers-fill text-primary"></i> Campanha em Massa
+                        </h5>
                         
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                <strong>Tipos aceitos:</strong><br>
-                                <i class="bi bi-image"></i> <strong>Imagem:</strong> JPG, PNG, GIF, WEBP<br>
-                                <i class="bi bi-film"></i> <strong>Vídeo:</strong> MP4, AVI, MOV, MKV, WEBM<br>
-                                <i class="bi bi-music-note"></i> <strong>Áudio:</strong> MP3, OGG, WAV, M4A, AAC<br>
-                                <i class="bi bi-file-earmark"></i> <strong>Documento:</strong> PDF, DOC, XLS, TXT, ZIP<br>
-                                <i class="bi bi-emoji-smile"></i> <strong>Sticker:</strong> PNG, WEBP (sem fundo)<br>
-                                <strong>Tamanho máximo:</strong> 16MB
-                            </small>
+                        <div class="mb-4">
+                            <label class="form-label">Instância de Envio *</label>
+                            {{ form.instance }}
+                            {% if form.instance.errors %}
+                                <div class="text-danger small mt-1">{{ form.instance.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Lista de Destinatários *</label>
+                            {{ form.recipients }}
+                            <div class="form-text small opacity-75">{{ form.recipients.help_text }}</div>
+                            {% if form.recipients.errors %}
+                                <div class="text-danger small mt-1">{{ form.recipients.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Tipo de Conteúdo</label>
+                            {{ form.message_type }}
+                        </div>
+
+                        <div class="mb-0 text-fields" style="display: none;">
+                            <label class="form-label">Texto da Mensagem</label>
+                            {{ form.text_content }}
+                        </div>
+
+                        <div class="media-fields" style="display: none;">
+                            <div class="p-3 border rounded-4 bg-light mb-4 text-center">
+                                <label for="{{ form.media_file.id_for_label }}" class="d-block cursor-pointer">
+                                    <i class="bi bi-cloud-arrow-up text-primary fs-1 mb-2 d-inline-block"></i>
+                                    <div class="fw-bold">Clique para selecionar o anexo</div>
+                                    <div class="text-muted small">Mesmos tipos aceitos de envio individual</div>
+                                </label>
+                                <div class="d-none">
+                                    {{ form.media_file }}
+                                </div>
+                                <div id="file-info" class="mt-2 small text-primary fw-bold"></div>
+                            </div>
+                            
+                            <div class="">
+                                <label class="form-label">Legenda (Opcional)</label>
+                                {{ form.media_caption }}
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="mb-3 media-fields">
-                        <label for="{{ form.media_caption.id_for_label }}" class="form-label">
-                            {{ form.media_caption.label }}
-                        </label>
-                        {{ form.media_caption }}
-                        {% if form.media_caption.errors %}
-                            <div class="text-danger">{{ form.media_caption.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {{ form.non_field_errors }}
+                </div>
+
+                <!-- Settings & Info Column -->
+                <div class="col-lg-5">
+                    <div class="glass-card p-4 mb-4">
+                        <h5 class="card-title-custom mb-4">
+                            <i class="bi bi-info-circle text-primary"></i> Resumo do Disparo
+                        </h5>
+                        
+                        <div id="bulk-summary" class="p-3 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-10 mb-4">
+                            <div class="d-flex align-items-center gap-2 text-primary mb-2">
+                                <i class="bi bi-calculator-fill"></i>
+                                <div class="fw-bold">Processamento</div>
+                            </div>
+                            <div class="small fw-semibold text-primary" id="summary-text">Aguardando destinatários...</div>
                         </div>
-                    {% endif %}
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'instances:message_history' %}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Voltar
-                        </a>
-                        <button type="submit" class="btn btn-success btn-lg">
-                            <i class="bi bi-send-fill"></i> Enviar para Todos
-                        </button>
+
+                        <div class="alert alert-warning border-0 bg-warning bg-opacity-10 p-4 rounded-4 mb-4">
+                            <div class="d-flex gap-3">
+                                <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Aparelho Precisa Estar Online</h6>
+                                    <p class="small mb-0 text-muted">Certifique-se que o celular que escaneou o QR Code tem conexão à internet estável durante todo o processo.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary-custom text-white py-3 fw-bold">
+                                <i class="bi bi-send-fill me-2"></i> Iniciar Disparo em Massa
+                            </button>
+                        </div>
                     </div>
-                </form>
+
+                    <!-- Guidance -->
+                    <div class="glass-card p-4">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-journal-text me-2"></i>Observações</h6>
+                        <ul class="small text-muted ps-3 mb-0">
+                            <li class="mb-2">Os números devem estar no formato internacional (Ex: 5511999999999).</li>
+                            <li class="mb-2">Evite o envio de spam para não comprometer sua conta.</li>
+                            <li>Mensagens serão enviadas sequencialmente com intervalos curtos.</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}
@@ -135,10 +128,22 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Styling tags consistently
+    const styleFields = () => {
+        document.querySelectorAll('select, input:not([type="checkbox"]):not([type="file"]), textarea').forEach(el => {
+            el.classList.add('form-control', 'rounded-3');
+            if (el.tagName === 'SELECT') el.classList.add('form-select');
+        });
+    };
+    styleFields();
+
     const messageType = document.getElementById('id_message_type');
     const textFields = document.querySelectorAll('.text-fields');
     const mediaFields = document.querySelectorAll('.media-fields');
     const fileInput = document.getElementById('id_media_file');
+    const fileInfo = document.getElementById('file-info');
+    const recipientsField = document.getElementById('id_recipients');
+    const summaryText = document.getElementById('summary-text');
     
     function toggleFields() {
         if (messageType.value === 'text') {
@@ -150,32 +155,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Preview do arquivo selecionado
-    if (fileInput) {
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const fileName = this.files[0].name;
-                const fileSize = (this.files[0].size / 1024 / 1024).toFixed(2);
-                
-                let previewDiv = document.getElementById('file-preview');
-                if (!previewDiv) {
-                    previewDiv = document.createElement('div');
-                    previewDiv.id = 'file-preview';
-                    previewDiv.className = 'alert alert-success mt-2';
-                    this.parentElement.appendChild(previewDiv);
-                }
-                
-                previewDiv.innerHTML = `
-                    <i class="bi bi-check-circle"></i> 
-                    <strong>Arquivo selecionado:</strong> ${fileName} (${fileSize} MB)
-                    <br><small>Este arquivo será enviado para todos os destinatários</small>
-                `;
-            }
-        });
+    function updateSummary() {
+        const recipientsText = recipientsField.value.trim();
+        const num = recipientsText ? recipientsText.split('\n').filter(r => r.trim()).length : 0;
+        
+        if (num > 0) {
+            summaryText.innerHTML = `Identificamos <strong>${num}</strong> números na lista.<br>Tempo estimado: ~${Math.ceil(num * 2 / 60)} min.`;
+        } else {
+            summaryText.innerHTML = "Aguardando destinatários...";
+        }
     }
     
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            fileInfo.innerHTML = `<i class="bi bi-file-earmark-check me-1"></i> ${this.files[0].name} (${(this.files[0].size/1024/1024).toFixed(2)}MB)`;
+        }
+    });
+    
     messageType.addEventListener('change', toggleFields);
+    recipientsField.addEventListener('input', updateSummary);
+    
     toggleFields();
+    updateSummary();
 });
 </script>
 {% endblock %}

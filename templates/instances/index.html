@@ -1,128 +1,146 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Início - InstaHunter 2.0{% endblock %}
+{% block title %}Dashboard - InstaHunter 2.0{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="jumbotron bg-light p-5 rounded">
-            <h1 class="display-4">
-                <i class="bi bi-send-fill text-primary"></i> InstaHunter 2.0
-            </h1>
-            <p class="lead">Sistema de Disparador de Mensagens usando Evolution API</p>
-            <hr class="my-4">
-            <p>Gerencie suas instâncias WhatsApp e dispare mensagens em massa de forma fácil e rápida.</p>
-            <a class="btn btn-primary btn-lg" href="{% url 'instances:instance_create' %}" role="button">
-                <i class="bi bi-plus-circle"></i> Criar Nova Instância
-            </a>
-        </div>
+<div class="row align-items-center mb-5">
+    <div class="col-lg-8">
+        <h2 class="fw-bold mb-1">Olá, Bem-vindo de volta! 👋</h2>
+        <p class="text-muted">Aqui está o que está acontecendo com suas instâncias hoje.</p>
+    </div>
+    <div class="col-lg-4 text-lg-end">
+        <a href="{% url 'instances:instance_create' %}" class="btn btn-primary-custom text-white">
+            <i class="bi bi-plus-lg me-2"></i> Nova Instância
+        </a>
     </div>
 </div>
 
-<div class="row mt-4">
-    <!-- Cards de Estatísticas -->
+<div class="row g-4 mb-5">
+    <!-- Stat Cards -->
     <div class="col-md-4">
-        <div class="card text-white bg-primary mb-3">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="bi bi-hdd-rack"></i> Total de Instâncias
-                </h5>
-                <h2 class="card-text">{{ total_instances }}</h2>
+        <div class="glass-card stat-card">
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-cpu"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_instances }}</h3>
+                <p>Total de Instâncias</p>
             </div>
         </div>
     </div>
     
     <div class="col-md-4">
-        <div class="card text-white bg-success mb-3">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="bi bi-check-circle"></i> Conectadas
-                </h5>
-                <h2 class="card-text">{{ connected_instances }}</h2>
+        <div class="glass-card stat-card">
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ connected_instances }}</h3>
+                <p>Online agora</p>
             </div>
         </div>
     </div>
     
     <div class="col-md-4">
-        <div class="card text-white bg-warning mb-3">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="bi bi-x-circle"></i> Desconectadas
-                </h5>
-                <h2 class="card-text">{{ total_instances|add:"-"|add:connected_instances }}</h2>
+        <div class="glass-card stat-card">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-pause-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_instances|default:0|add:0|add:connected_instances|default:0|add:0|add:"-0"|cut:"-" }}</h3>
+                <p>Desconectadas</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Últimas Instâncias -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-clock-history"></i> Últimas Instâncias
+<!-- Quick Actions & Latest Instances -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title-custom mb-0">
+                    <i class="bi bi-clock-history text-primary"></i> Atividades Recentes
                 </h5>
-                <a href="{% url 'instances:instance_list' %}" class="btn btn-sm btn-primary">
-                    Ver Todas
-                </a>
+                <a href="{% url 'instances:instance_list' %}" class="text-primary text-decoration-none small fw-bold">Ver todas</a>
             </div>
-            <div class="card-body">
-                {% if instances %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Número</th>
-                                    <th>Tipo</th>
-                                    <th>Status</th>
-                                    <th>Criada em</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for instance in instances %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ instance.instance_name }}</strong>
-                                    </td>
-                                    <td>{{ instance.number|default:"-" }}</td>
-                                    <td>
-                                        <span class="badge bg-info">
-                                            {{ instance.get_integration_type_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if instance.status == 'connected' %}
-                                            <span class="badge bg-success">Conectada</span>
-                                        {% elif instance.status == 'disconnected' %}
-                                            <span class="badge bg-warning">Desconectada</span>
-                                        {% elif instance.status == 'error' %}
-                                            <span class="badge bg-danger">Erro</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Criada</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ instance.created_at|date:"d/m/Y H:i" }}</td>
-                                    <td>
-                                        <a href="{% url 'instances:instance_detail' instance.pk %}" 
-                                           class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+            
+            {% if instances %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="text-muted small text-uppercase">
+                            <tr>
+                                <th class="border-0">Instância</th>
+                                <th class="border-0">Número</th>
+                                <th class="border-0 text-center">Status</th>
+                                <th class="border-0 text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for instance in instances|slice:":5" %}
+                            <tr>
+                                <td class="border-0">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-whatsapp text-success"></i>
+                                        </div>
+                                        <span class="fw-semibold">{{ instance.instance_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="border-0 text-muted">{{ instance.number|default:"-" }}</td>
+                                <td class="border-0 text-center">
+                                    {% if instance.status == 'connected' %}
+                                        <span class="badge rounded-pill bg-success-subtle text-success px-3">Online</span>
+                                    {% elif instance.status == 'disconnected' %}
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning px-3">Offline</span>
+                                    {% else %}
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger px-3">Erro</span>
+                                    {% endif %}
+                                </td>
+                                <td class="border-0 text-end">
+                                    <a href="{% url 'instances:instance_detail' instance.pk %}" class="btn btn-light btn-sm rounded-3">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <img src="{% static 'img/empty.svg' %}" alt="Empty" style="width: 120px;" class="mb-3 opacity-25">
+                    <p class="text-muted">Nenhuma instância encontrada.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4 mb-4" style="background: linear-gradient(135deg, var(--primary) 0%, #312e81 100%); border: none;">
+            <h5 class="text-white mb-3">Upgrade para PRO 🚀</h5>
+            <p class="text-white-50 small mb-4">Desbloqueie envio de arquivos ilimitados e webhooks avançados.</p>
+            <button class="btn btn-light w-100 fw-bold py-2">Saber Mais</button>
+        </div>
+
+        <div class="glass-card p-4">
+            <h5 class="card-title-custom mb-4">Atalhos Rápidos</h5>
+            <div class="d-grid gap-2">
+                <a href="{% url 'instances:message_send' %}" class="btn btn-light text-start p-3 d-flex align-items-center gap-3 border-0">
+                    <i class="bi bi-chat-left-dots text-primary"></i>
+                    <div>
+                        <div class="fw-bold">Enviar Mensagem</div>
+                        <div class="small text-muted">Disparo individual ou teste</div>
                     </div>
-                {% else %}
-                    <p class="text-muted text-center">
-                        Nenhuma instância criada ainda.
-                        <a href="{% url 'instances:instance_create' %}">Criar primeira instância</a>
-                    </p>
-                {% endif %}
+                </a>
+                <a href="{% url 'instances:campaign_history' %}" class="btn btn-light text-start p-3 d-flex align-items-center gap-3 border-0">
+                    <i class="bi bi-bar-chart text-success"></i>
+                    <div>
+                        <div class="fw-bold">Ver Relatórios</div>
+                        <div class="small text-muted">Taxa de entrega e cliques</div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>

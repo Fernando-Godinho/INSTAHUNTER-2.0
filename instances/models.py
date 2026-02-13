@@ -151,6 +151,27 @@ class Campaign(models.Model):
         return f'Campanha {self.id} - {self.instance.instance_name} ({self.success_count}/{self.total_recipients})'
 
 
+class Contact(models.Model):
+    """
+    Model para armazenar contatos do WhatsApp
+    """
+    instance = models.ForeignKey(Instance, on_delete=models.CASCADE, related_name='contacts', verbose_name='Instância')
+    name = models.CharField('Nome', max_length=255, blank=True, null=True)
+    number = models.CharField('Número', max_length=30, help_text='Número wa_id (ex: 555183097389)')
+    profile_pic = models.URLField('URL da Foto', blank=True, null=True)
+    last_message_at = models.DateTimeField('Última Mensagem em', auto_now=True)
+    created_at = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Contato'
+        verbose_name_plural = 'Contatos'
+        unique_together = ('instance', 'number')
+        ordering = ['-last_message_at']
+
+    def __str__(self):
+        return self.name or self.number
+
+
 class Message(models.Model):
     """
     Model para armazenar histórico de mensagens enviadas
@@ -168,12 +189,22 @@ class Message(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pendente'),
         ('sent', 'Enviada'),
+        ('delivered', 'Entregue'),
+        ('read', 'Lida'),
         ('error', 'Erro'),
     ]
     
+    DIRECTION_CHOICES = [
+        ('IN', 'Recebida'),
+        ('OUT', 'Enviada'),
+    ]
+    
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='messages', verbose_name='Campanha', null=True, blank=True)
+    contact = models.ForeignKey(Contact, on_delete=models.SET_NULL, related_name='messages', verbose_name='Contato', null=True, blank=True)
     instance = models.ForeignKey(Instance, on_delete=models.CASCADE, related_name='messages', verbose_name='Instância')
-    recipient = models.CharField('Destinatário', max_length=20, help_text='Número com código do país (ex: 5511999999999)')
+    recipient = models.CharField('Destinatário/Remetente', max_length=30, help_text='Número com código do país')
+    direction = models.CharField('Direção', max_length=3, choices=DIRECTION_CHOICES, default='OUT')
+    wamid = models.CharField('ID da Mensagem (WhatsApp)', max_length=255, unique=True, null=True, blank=True)
     message_type = models.CharField('Tipo', max_length=20, choices=MESSAGE_TYPE_CHOICES, default='text')
     
     # Conteúdo
@@ -189,7 +220,7 @@ class Message(models.Model):
     error_message = models.TextField('Mensagem de Erro', blank=True, null=True)
     
     # Metadados
-    created_at = models.DateTimeField('Criado em', auto_now_add=True)
+    created_at = models.DateTimeField('Criado em', default=timezone.now)
     sent_at = models.DateTimeField('Enviado em', auto_now_add=True)
     
     class Meta:
