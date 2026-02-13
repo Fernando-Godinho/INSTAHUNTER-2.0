@@ -12,4 +12,4 @@ echo "Coletando arquivos estáticos..."
 python manage.py collectstatic --noinput --clear
 
 echo "Iniciando Gunicorn..."
-exec gunicorn --bind 0.0.0.0:3354 --workers 4 --timeout 120 instahunter.wsgi:application
+exec gunicorn --bind 0.0.0.0:3354 --workers 4 --timeout 120 --access-logfile - --error-logfile - instahunter.wsgi:application
